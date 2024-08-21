@@ -1,19 +1,22 @@
-# Welcome to your Expo app 👋
+# Welcome to our Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-## Get started
+## Getting started
 
-1. Install dependencies
+### 1. Install Node.js
+Make sure you have Node.js installed on your machine. It can be installed from: https://nodejs.org/en
+
+### 2. Install app dependencies
 
    ```bash
-   npm install
+    npm install
    ```
 
-2. Start the app
+### 3. Start the app
 
    ```bash
-    npx expo start
+    npx expo start --tunnel
    ```
 
 In the output, you'll find options to open the app in a
