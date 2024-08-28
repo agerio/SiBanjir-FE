@@ -1,8 +1,10 @@
 import React, { FC } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useGlobalContext } from "../../context/GlobalProvider";
 
 const Login: FC = () => {
+  const { setUser, setIsLogged } = useGlobalContext();
   const navigation = useNavigation();
 
   return (
@@ -28,12 +30,14 @@ const Login: FC = () => {
       <TouchableOpacity
         style={styles.button}
         onPress={() => {
+          setIsLogged(true); // Set the logged-in state
+
           navigation.dispatch(
             CommonActions.reset({
               index: 0,
               routes: [{ name: '(tabs)' }],
             })
-          );
+          ); // Perform the navigation
         }}
       >
         <Text style={styles.buttonText}>Sign in</Text>
