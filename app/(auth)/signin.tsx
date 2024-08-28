@@ -1,64 +1,111 @@
-// app/(auth)/signin.tsx
+import React, { FC } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-
-export default function LogInScreen() {
+const Login: FC = () => {
   const navigation = useNavigation();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleSignIn = () => {
-    // Placeholder for sign-in logic
-    if (email && password) {
-      // Add your sign-in logic here
-      Alert.alert('Signed In', `Email: ${email}`);
-      // Navigate to a different screen upon success
-      // navigation.navigate('SomeOtherScreen');
-    } else {
-      Alert.alert('Error', 'Please enter both email and password.');
-    }
-  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Sign In</Text>
+      {/* <View style={styles.logoContainer}>
+        <Image source={require('../assets/images/mars.jpg')} style={styles.logo} />
+      </View> */}
+      <Text style={styles.title}>Proactive Flood Alerts:</Text>
+      <Text style={styles.subtitle}>Predict and Prepare with SiBanjir</Text>
+
       <TextInput
         style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
+        placeholder="Username"
+        placeholderTextColor="#999"
       />
       <TextInput
         style={styles.input}
         placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
+        placeholderTextColor="#999"
         secureTextEntry
       />
-      <Button title="Sign In" onPress={handleSignIn} />
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => {
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'tabs' }],
+            })
+          );
+        }}
+      >
+        <Text style={styles.buttonText}>Sign in</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => {}}>
+        <Text style={styles.registerText}>
+          Don’t have an account? <Text style={styles.registerLink}>Register</Text>
+        </Text>
+      </TouchableOpacity>
     </View>
   );
-}
+};
+
+export default Login;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 16,
+    alignItems: 'center',
+    backgroundColor: '#1D1D2E',
+    padding: 20,
   },
-  header: {
+  logoContainer: {
+    marginBottom: 40,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+  },
+  title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 16,
+    color: '#fff',
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 30,
   },
   input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 8,
+    width: '100%',
+    height: 50,
+    backgroundColor: '#333',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    color: '#fff',
+    marginBottom: 20,
+  },
+  button: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#6C63FF',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  registerText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  registerLink: {
+    color: '#6C63FF',
+    fontWeight: 'bold',
   },
 });
