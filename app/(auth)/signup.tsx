@@ -52,7 +52,7 @@ const Signup: FC = () => {
 
   const handleSignup = async () => {
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/user/register', {
+      const response = await axios.post('https://si-banjir-be.vercel.app/api/user/register', {
         username,
         password,
         password2,

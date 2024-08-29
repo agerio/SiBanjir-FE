@@ -51,7 +51,7 @@ const Signin: FC = () => {
 
   const handleSignin = async () => {
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/user/login', {
+      const response = await axios.post('https://si-banjir-be.vercel.app/api/user/login', {
         username,
         password,
       });
