@@ -34,42 +34,43 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  signUpText: {
+  signInText: {
     color: '#fff',
     fontSize: 14,
   },
-  signUpLink: {
+  signInLink: {
     color: '#6C63FF',
     fontWeight: 'bold',
   },
 });
 
-const Signin: FC = () => {
+const Signup: FC = () => {
   const navigation = useNavigation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [password2, setConfirmPassword] = useState('');
 
-  const handleSignin = async () => {
+  const handleSignup = async () => {
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/user/login', {
+      const response = await axios.post('http://127.0.0.1:8000/api/user/register', {
         username,
         password,
+        password2,
       });
 
-      if (response.data.message === 'Login successful') {
-        // Navigate to the (tabs) screen
+      if (response.data.message === 'Registration successful') {
+        // Navigate to the signin screen
         navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: '(tabs)' }],
+          CommonActions.navigate({
+            name: 'signin',
           })
         );
       } else {
-        // Handle login error
-        console.error('Login error:', response.data.error);
+        // Handle registration error
+        console.error('Registration error:', response.data.error);
       }
     } catch (error) {
-      console.error('Signin error:', error);
+      console.error('Signup error:', error);
     }
   };
 
@@ -90,26 +91,34 @@ const Signin: FC = () => {
         onChangeText={setPassword}
         value={password}
       />
+      <TextInput
+        style={styles.input}
+        placeholder="Re-enter Password"
+        placeholderTextColor="#999"
+        secureTextEntry
+        onChangeText={setConfirmPassword}
+        value={password2}
+      />
 
-      <TouchableOpacity style={styles.button} onPress={handleSignin}>
-        <Text style={styles.buttonText}>Sign in</Text>
+      <TouchableOpacity style={styles.button} onPress={handleSignup}>
+        <Text style={styles.buttonText}>Sign up</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         onPress={() => {
           navigation.dispatch(
             CommonActions.navigate({
-              name: 'signup',
+              name: 'signin',
             })
           );
         }}
       >
-        <Text style={styles.signUpText}>
-          Don't have an account? <Text style={styles.signUpLink}>Sign up</Text>
+        <Text style={styles.signInText}>
+          Already have an account? <Text style={styles.signInLink}>Sign in</Text>
         </Text>
       </TouchableOpacity>
     </View>
   );
 };
 
-export default Signin;
+export default Signup;
