@@ -58,7 +58,8 @@ const Signup: FC = () => {
         password2,
       });
 
-      if (response.data.message === 'Registration successful') {
+
+      if (response.data.message === "User created successfully") {
         // Navigate to the signin screen
         navigation.dispatch(
           CommonActions.navigate({
@@ -67,6 +68,7 @@ const Signup: FC = () => {
         );
       } else {
         // Handle registration error
+        console.log(response.data.message)
         console.error('Registration error:', response.data.error);
       }
     } catch (error) {
