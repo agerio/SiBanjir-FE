@@ -1,11 +1,40 @@
-import React, { FC } from 'react';
+import React, { FC, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useGlobalContext } from '@/context/GlobalProvider';
+import axios from 'axios';
 
-const Login: FC = () => {
+const Signin: FC = () => {
   const { setUser, setIsLogged } = useGlobalContext();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const navigation = useNavigation();
+
+  const handleSignin = async () => {
+    try {
+      const response = await axios.post('https://si-banjir-be.vercel.app/api/user/login', {
+        username,
+        password,
+      });
+
+      if (response.data.message === 'Login successful') {
+        setIsLogged(true); // Set the logged-in state
+        
+        // Navigate to the (tabs) screen
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: '(tabs)' }],
+          })
+        );
+      } else {
+        // Handle login error
+        console.error('Login error:', response.data.error);
+      }
+    } catch (error) {
+      console.error('Signin error:', error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -14,45 +43,45 @@ const Login: FC = () => {
       </View>
       <Text style={styles.title}>Proactive Flood Alerts:</Text>
       <Text style={styles.subtitle}>Predict and Prepare with SiBanjir</Text>
-
+      
       <TextInput
         style={styles.input}
         placeholder="Username"
         placeholderTextColor="#999"
+        onChangeText={setUsername}
+        value={username}
       />
       <TextInput
         style={styles.input}
         placeholder="Password"
         placeholderTextColor="#999"
         secureTextEntry
+        onChangeText={setPassword}
+        value={password}
       />
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => {
-          setIsLogged(true); // Set the logged-in state
-
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: '(tabs)' }],
-            })
-          ); // Perform the navigation
-        }}
-      >
+      <TouchableOpacity style={styles.button} onPress={handleSignin}>
         <Text style={styles.buttonText}>Sign in</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => {}}>
-        <Text style={styles.registerText}>
-          Don’t have an account? <Text style={styles.registerLink}>Register</Text>
+      <TouchableOpacity
+        onPress={() => {
+          navigation.dispatch(
+            CommonActions.navigate({
+              name: 'signup',
+            })
+          );
+        }}
+      >
+        <Text style={styles.signUpText}>
+          Don't have an account? <Text style={styles.signUpLink}>Sign up</Text>
         </Text>
       </TouchableOpacity>
     </View>
   );
 };
 
-export default Login;
+export default Signin;
 
 const styles = StyleSheet.create({
   container: {
@@ -104,11 +133,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  registerText: {
+  signUpText: {
     color: '#fff',
     fontSize: 14,
   },
-  registerLink: {
+  signUpLink: {
     color: '#6C63FF',
     fontWeight: 'bold',
   },
