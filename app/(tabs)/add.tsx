@@ -1,102 +1,239 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Image, Platform } from 'react-native';
-
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-
-export default function TabTwoScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={<Ionicons size={310} name="code-slash" style={styles.headerImage} />}>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user's current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText> library
-          to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
-  );
-}
+import React, { useState } from "react";
+import { SafeAreaView, View, Image, TextInput, Text, StyleSheet, TouchableOpacity, Alert, Modal } from "react-native";
+import * as ImagePicker from 'expo-image-picker';
+import * as Camera from 'expo-camera';
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+    container: {
+        padding: 20,
+        flex: 1,
+        alignItems: "center",
+        backgroundColor: "#1e1e30"
+    },
+    formContainer: {
+        backgroundColor: "#2b2b4b",
+        borderRadius: 10,
+        padding: 20,
+        width: "90%",
+        alignItems: "center"
+    },
+    label: {
+        fontSize: 16,
+        color: "#fff",
+        marginBottom: 10,
+        alignSelf: "flex-start"
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 10,
+        padding: 10,
+        fontSize: 16,
+        backgroundColor: "#fff",
+        marginBottom: 15,
+        width: "100%"
+    },
+    uploadBox: {
+        width: "100%",
+        height: 200,
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 10,
+        borderWidth: 2,
+        borderColor: "#ccc",
+        borderRadius: 10,
+        backgroundColor: "#f0f0f0",
+    },
+    photoImage: {
+        width: "100%",
+        height: "100%",
+        borderRadius: 10,
+    },
+    uploadText: {
+        color: "#555",
+        fontSize: 16,
+    },
+    descriptionText: {
+        color: "#ccc",
+        fontSize: 12,
+        marginBottom: 15,
+        textAlign: "center"
+    },
+    actionButtonContainer: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        width: "100%",
+        marginTop: 20
+    },
+    actionButton: {
+        paddingVertical: 15,
+        paddingHorizontal: 40,
+        borderRadius: 10,
+        backgroundColor: "#444",
+        alignItems: "center",
+        marginHorizontal: 10
+    },
+    actionButtonText: {
+        color: "#fff",
+        fontSize: 16
+    },
+    submitButton: {
+        backgroundColor: "#333",
+        paddingVertical: 15,
+        paddingHorizontal: 30,
+        borderRadius: 10,
+        marginTop: 20
+    },
+    submitButtonText: {
+        color: "#fff",
+        fontSize: 16
+    },
+    cancelText: {
+        color: "#aaa",
+        fontSize: 16,
+        marginTop: 20
+    },
+    modalView: {
+        backgroundColor: "#333",
+        padding: 20,
+        borderRadius: 10,
+        alignItems: "center"
+    },
+    modalButton: {
+        backgroundColor: "#444",
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 10,
+        marginBottom: 10,
+        width: "100%",
+        alignItems: "center"
+    },
+    modalButtonText: {
+        color: "#fff",
+        fontSize: 16
+    }
 });
+
+export default function ReportFlood() {
+    const [description, setDescription] = useState("");
+    const [photoState, setPhotoState] = useState<{ uri?: string }>({});
+    const [permissionStatus, requestPermission] = Camera.useCameraPermissions();
+    const [modalVisible, setModalVisible] = useState(false);
+
+    async function handleImageLibraryPress() {
+        setModalVisible(false);
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            setPhotoState(result.assets[0]);
+        }
+    }
+
+    async function handleCameraPress() {
+        setModalVisible(false);
+        // Check if permissionStatus is null or undefined
+        if (!permissionStatus || !permissionStatus.granted) {
+            const { granted } = await requestPermission();
+            if (!granted) return; // Exit if permission is not granted
+        }
+
+        let result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            setPhotoState(result.assets[0]);
+        }
+    }
+
+    function handleRetake() {
+        setPhotoState({});
+    }
+
+    function handleSubmit() {
+        if (!description || !photoState.uri) {
+            Alert.alert("Missing Fields", "Please provide a description and upload an image.");
+            return;
+        }
+        // handle submission logic here
+        Alert.alert("Success", "Flood report submitted!");
+    }
+
+    function openModal() {
+        setModalVisible(true);
+    }
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <View style={styles.formContainer}>
+                <Text style={styles.label}>Description</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Enter description"
+                    value={description}
+                    onChangeText={setDescription}
+                />
+
+                <TouchableOpacity style={styles.uploadBox} onPress={openModal}>
+                    {photoState.uri ? (
+                        <Image
+                            source={{ uri: photoState.uri }}
+                            style={styles.photoImage}
+                        />
+                    ) : (
+                        <Text style={styles.uploadText}>Upload Image</Text>
+                    )}
+                </TouchableOpacity>
+
+                <Text style={styles.descriptionText}>Image will be shown to other users for verification</Text>
+
+                {photoState.uri ? (
+                    <View style={styles.actionButtonContainer}>
+                        <TouchableOpacity style={styles.actionButton} onPress={handleRetake}>
+                            <Text style={styles.actionButtonText}>Retake</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+                            <Text style={styles.submitButtonText}>SUBMIT</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+                        <Text style={styles.submitButtonText}>SUBMIT</Text>
+                    </TouchableOpacity>
+                )}
+
+                <TouchableOpacity onPress={() => {}}><Text style={styles.cancelText}>Cancel</Text></TouchableOpacity>
+            </View>
+
+            {/* Modal for Upload Options */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={[styles.container, { justifyContent: 'center' }]}>
+                    <View style={styles.modalView}>
+                        <TouchableOpacity style={styles.modalButton} onPress={handleCameraPress}>
+                            <Text style={styles.modalButtonText}>Capture Image</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.modalButton} onPress={handleImageLibraryPress}>
+                            <Text style={styles.modalButtonText}>Upload from Library</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setModalVisible(false)}>
+                            <Text style={{ color: "#aaa", marginTop: 10 }}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+        </SafeAreaView>
+    );
+}
