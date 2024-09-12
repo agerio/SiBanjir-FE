@@ -1,102 +1,218 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Image, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const { height } = Dimensions.get('window');
 
-export default function TabTwoScreen() {
+// Dummy data for notification and history lists
+const notifications = [
+  { id: '1', title: 'Floods Near your place', distance: '1.7 Km' },
+  { id: '2', title: 'Floods Near your place', distance: '1.7 Km' },
+  { id: '3', title: 'Floods Near your place', distance: '1.7 Km' },
+];
+
+const history = [
+  { id: '1', title: 'Brisbane River', description: 'Flood event recorded on Brisbane City.', time: '2 Hour Ago' },
+  { id: '2', title: 'Brisbane River', description: 'Flood event recorded on Brisbane City.', time: 'Yesterday' },
+  { id: '3', title: 'Brisbane River', description: 'Flood event recorded on Brisbane City.', time: '2 Days Ago' },
+  { id: '4', title: 'Brisbane River', description: 'Flood event recorded on Brisbane City.', time: '4 Days Ago' },
+];
+
+export default function NotificationPage() {
+  const [activeTab, setActiveTab] = useState('notifications'); // 'notifications' or 'history'
+
+  const renderNoNotification = () => (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.iconContainer}>
+        <FontAwesome name="bell-slash" size={60} color="#000" />
+      </View>
+      <Text style={styles.noDataText}>There's no notifications</Text>
+      <Text style={styles.subText}>Your notifications will appear on this page</Text>
+    </SafeAreaView>
+  );
+
+  const renderNotificationList = () => (
+    <FlatList
+      data={notifications}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => (
+        <View style={styles.notificationItem}>
+          <FontAwesome name="bell" size={30} color="#fff" />
+          <View style={styles.notificationText}>
+            <Text style={styles.notificationTitle}>{item.title}</Text>
+            <Text style={styles.notificationSubText}>There's a nearby flood. Approximately {item.distance} from your place</Text>
+          </View>
+        </View>
+      )}
+    />
+  );
+
+  const renderNoHistory = () => (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.iconContainer}>
+        <FontAwesome name="clock-o" size={60} color="#000" />
+      </View>
+      <Text style={styles.noDataText}>There's no history</Text>
+      <Text style={styles.subText}>Flood's history will appear on this page</Text>
+    </SafeAreaView>
+  );
+
+  const renderHistoryList = () => (
+    <FlatList
+      data={history}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => (
+        <View style={styles.historyItem}>
+          <FontAwesome name="exclamation-triangle" size={30} color="red" />
+          <View style={styles.historyText}>
+            <Text style={styles.historyTitle}>{item.title}</Text>
+            <Text style={styles.historyDescription}>{item.description}</Text>
+            <Text style={styles.historyTime}>{item.time}</Text>
+          </View>
+        </View>
+      )}
+    />
+  );
+
+  const renderContent = () => {
+    if (activeTab === 'notifications') {
+      return notifications.length > 0 ? renderNotificationList() : renderNoNotification();
+    } else {
+      return history.length > 0 ? renderHistoryList() : renderNoHistory();
+    }
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={<Ionicons size={310} name="code-slash" style={styles.headerImage} />}>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user's current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText> library
-          to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === 'notifications' ? styles.activeTab : styles.inactiveTab
+          ]}
+          onPress={() => setActiveTab('history')}
+          disabled={activeTab === 'history'} // Disable Notifications button if already active
+        >
+          <Text style={[styles.tabText, activeTab === 'notifications' ? styles.activeTabText : styles.inactiveTabText]}>
+            Notifications
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === 'history' ? styles.activeTab : styles.inactiveTab
+          ]}
+          onPress={() => setActiveTab('notifications')}
+          disabled={activeTab === 'notifications'} // Disable History button if already active
+        >
+          <Text style={[styles.tabText, activeTab === 'history' ? styles.activeTabText : styles.inactiveTabText]}>
+            History
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {renderContent()}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    backgroundColor: '#1e1e30',
   },
-  titleContainer: {
+  tabContainer: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 15,
+  },
+  tabButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 40,
+    borderRadius: 10,
+    marginHorizontal: 10,
+  },
+  activeTab: {
+    backgroundColor: '#444',
+  },
+  inactiveTab: {
+    backgroundColor: '#fff',
+  },
+  tabText: {
+    fontSize: 16,
+  },
+  activeTabText: {
+    color: '#fff',
+  },
+  inactiveTabText: {
+    color: '#000',
+  },
+  iconContainer: {
+    backgroundColor: '#fff',
+    width: height / 6,
+    height: height / 6,
+    borderRadius: height / 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 50,
+    alignSelf: 'center',
+  },
+  noDataText: {
+    fontSize: 24,
+    color: '#fff',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  subText: {
+    fontSize: 16,
+    color: '#bbb',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  notificationItem: {
+    flexDirection: 'row',
+    padding: 15,
+    backgroundColor: '#2b2b4b',
+    borderRadius: 10,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  notificationText: {
+    marginLeft: 15,
+  },
+  notificationTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  notificationSubText: {
+    color: '#bbb',
+    fontSize: 14,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    padding: 15,
+    backgroundColor: '#2b2b4b',
+    borderRadius: 10,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  historyText: {
+    marginLeft: 15,
+  },
+  historyTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  historyDescription: {
+    color: '#bbb',
+    fontSize: 14,
+  },
+  historyTime: {
+    color: '#777',
+    fontSize: 12,
   },
 });
