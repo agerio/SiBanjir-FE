@@ -1,38 +1,21 @@
 import React, { FC, useState } from 'react';
+import { router } from "expo-router";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
-import { useGlobalContext } from '@/context/GlobalProvider';
-import axios from 'axios';
+import { useAuth } from '@/context/GlobalContext';
 
 const Signin: FC = () => {
-  const { setUser, setIsLogged } = useGlobalContext();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const { onSignin, authState } = useAuth();
   const navigation = useNavigation();
 
   const handleSignin = async () => {
-    try {
-      const response = await axios.post('https://si-banjir-be.vercel.app/api/user/login', {
-        username,
-        password,
-      });
-
-      if (response.data.message === 'Login successful') {
-        setIsLogged(true); // Set the logged-in state
-        
-        // Navigate to the (tabs) screen
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: '(tabs)' }],
-          })
-        );
-      } else {
-        // Handle login error
-        console.error('Login error:', response.data.error);
-      }
-    } catch (error) {
-      console.error('Signin error:', error);
+    const response = await onSignin!(username, password);
+    if (response && response.error) {
+      alert(response.msg);
+    } else {
+      router.replace("/(tabs)/");
     }
   };
 

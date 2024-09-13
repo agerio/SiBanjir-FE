@@ -1,37 +1,22 @@
 import React, { FC, useState } from 'react';
+import { router } from "expo-router";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
-import axios from 'axios';
+import { useAuth } from '@/context/GlobalContext';
 
 const Signup: FC = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [password2, setConfirmPassword] = useState('');
+    const { onSignup } = useAuth();
     const navigation = useNavigation();
 
   const handleSignup = async () => {
-    try {
-      const response = await axios.post('https://si-banjir-be.vercel.app/api/user/register', {
-        username,
-        password,
-        password2,
-      });
-
-
-      if (response.data.message === "User created successfully") {
-        // Navigate to the signin screen
-        navigation.dispatch(
-          CommonActions.navigate({
-            name: 'signin',
-          })
-        );
-      } else {
-        // Handle registration error
-        console.log(response.data.message)
-        console.error('Registration error:', response.data.error);
-      }
-    } catch (error) {
-      console.error('Signup error:', error);
+    const response = await onSignup!(username, password, password2);
+    if (response && response.error) {
+      alert(response.msg);
+    } else {
+      router.replace("/(auth)/signin");
     }
   };
 
