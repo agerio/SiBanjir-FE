@@ -11,7 +11,8 @@ interface AuthProps {
 }
 
 const TOKEN_KEY = 'auth-token'
-export const API_URL = 'https://si-banjir-be.vercel.app/api/';
+export const API_URL = 'https://si-banjir-be.vercel.app/api';
+// export const API_URL = 'http://10.0.2.2:8000/api';
 const AuthContext = createContext<AuthProps>({});
 
 export const useAuth = () => {
@@ -30,17 +31,27 @@ export const AuthProvider = ({ children }: any) => {
 
     useEffect(() => {
         const loadToken = async () => {
+            console.log("checking existing token ...")
             const token = await SecureStore.getItemAsync(TOKEN_KEY);
 
             if (token) {
+                console.log("token found! checking token validity...")
                 axios.defaults.headers.common['Authorization'] = `Token ${token}`;
-                setAuthState({
-                    token: token,
-                    authenticated: true
-                });
+                try {
+                    const response = await axios.get(`${API_URL}/user/me`);
+                    setAuthState({
+                        token: token,
+                        authenticated: true
+                    });
+                } catch (error) {
+                    await signout();
+                };
 
-                setLoading(false);
-            }
+            } else {
+                console.log("token not found. signing out ...")
+                await signout();
+            };
+            setLoading(false);
         };
         loadToken();
     }, []);
@@ -56,6 +67,7 @@ export const AuthProvider = ({ children }: any) => {
     const signin = async (username: string, password: string) => {
         try {
             const response = await axios.post(`${API_URL}/user/login`, { username, password });
+            console.log("status: ",response.status)
 
             setAuthState({
                 token: response.data.token,
@@ -66,7 +78,7 @@ export const AuthProvider = ({ children }: any) => {
 
             return response;
         } catch (e) {
-            return { error: true, msg: (e as any).response.data };
+            return { error: true, msg: (e as any).response?.data || (e as any).message };
         }
     };
 
