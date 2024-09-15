@@ -132,8 +132,8 @@ export default function ShowMap() {
 
         // Cleanup function
         return () => {
-            if (subscription) {
-            subscription.remove();
+            if (subscription && typeof subscription.remove === 'function') {
+                subscription.remove();
             }
         };
         }
