@@ -4,13 +4,14 @@ import React from 'react';
 import { TabBarIcon } from '@/components/navigation/TabBarIcon';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useGlobalContext } from '@/context/GlobalProvider';
+import { useAuth } from '@/context/GlobalContext';
 
 export default function TabLayout() {
+  console.log("app/(tabs)/_layout.tsx")
   const colorScheme = useColorScheme();
-
-  const { loading, isLogged } = useGlobalContext();
-  if (!loading && !isLogged) return <Redirect href="/signin" />;
+  
+  const { authState, loading } = useAuth();
+  if (!loading && !authState?.authenticated) return <Redirect href="/signin" />;
 
   return (
     <Tabs

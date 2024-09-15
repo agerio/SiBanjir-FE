@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SafeAreaView, View, Image, Text, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';  // Import the useRouter from expo-router
+import axios from 'axios';
+import { API_URL } from "@/context/GlobalContext";
 
 const { width, height } = Dimensions.get("window");
 const imageSize = height / 6;
@@ -77,6 +79,19 @@ export default function Profile() {
     const [photoState, setPhotoState] = useState<{ uri?: string }>({});
     const [username, setUsername] = useState("John Doe");
     const router = useRouter();  // Use router from expo-router
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const response = await axios.get(`${API_URL}/user/me`);
+                setUsername(response.data.username);
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            }
+        };
+
+        fetchUserData();
+    }, []);
 
     async function handleChangePress() {
         let result = await ImagePicker.launchImageLibraryAsync({
