@@ -3,7 +3,7 @@ import { SafeAreaView, View, Image, Text, StyleSheet, TouchableOpacity, Dimensio
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';  // Import the useRouter from expo-router
 import axios from 'axios';
-import { API_URL } from "@/context/GlobalContext";
+import { API_URL, useAuth } from "@/context/GlobalContext";
 
 const { width, height } = Dimensions.get("window");
 const imageSize = height / 6;
@@ -79,6 +79,7 @@ export default function Profile() {
     const [photoState, setPhotoState] = useState<{ uri?: string }>({});
     const [username, setUsername] = useState("John Doe");
     const router = useRouter();  // Use router from expo-router
+    const { onSignout } = useAuth();
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -106,11 +107,18 @@ export default function Profile() {
         }
     }
 
+    const handleSignout = async () => {
+        if (onSignout) {
+            await onSignout();
+        } 
+        router.replace("/(auth)/signin");
+      };
+
     const hasPhoto = Boolean(photoState.uri);
 
     return (
         <SafeAreaView style={styles.container}>
-            <TouchableOpacity style={styles.logoutButton}>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleSignout}>
                 <Text style={styles.logoutText}>Logout</Text>
             </TouchableOpacity>
             <View style={styles.profileSection}>
