@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, Appearance, View, SafeAreaView, Text, Image, Platform } from "react-native";
+import { StyleSheet, Appearance, View, SafeAreaView, Text } from "react-native";
 import MapView, { Circle } from "react-native-maps";
-
-// Use expo-location instead of Geolocation
 import * as Location from 'expo-location';
 import { getDistance } from "geolib";
-
-import { locations } from "../data/locations";
+import { API_URL } from "@/context/GlobalContext";
+import axios from 'axios';
 
 // Define Stylesheet
 const styles = StyleSheet.create({
@@ -25,19 +23,18 @@ const styles = StyleSheet.create({
     }
 });
 
-// Get light or dark mode
 const colorScheme = Appearance.getColorScheme();
 
 // Component for displaying nearest location and whether it's within 100 metres
 function NearbyLocation(props) {
-    if(typeof props.location != "undefined") {
+    if (typeof props.location !== "undefined") {
         return (
             <SafeAreaView style={styles.nearbyLocationSafeAreaView}>
                 <View style={styles.nearbyLocationView}>
                     <Text style={styles.nearbyLocationText}>
                         {props.location}
                     </Text>
-                    {props.distance.nearby &&
+                    {props.distance?.nearby &&
                         <Text style={{
                             ...styles.nearbyLocationText,
                             fontWeight: "bold"
@@ -49,93 +46,119 @@ function NearbyLocation(props) {
             </SafeAreaView>
         );
     }
+    return null;
+}
+
+// Function to validate latitude and longitude
+function isValidCoordinates(lat, long) {
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(long);
+
+    return (
+        !isNaN(latitude) &&
+        !isNaN(longitude) &&
+        latitude >= -90 && latitude <= 90 &&
+        longitude >= -180 && longitude <= 180
+    );
 }
 
 export default function ShowMap() {
-    // Convert string-based latlong to object-based on each location
-    const updatedLocations = locations.map(location => {
-        const latlong = location.latlong.split(", ");
-
-        location.coordinates = {
-            latitude: parseFloat(latlong[0]),
-            longitude: parseFloat(latlong[1])
-        };
-      
-        return location;
-    });
-
     // Setup state for map data
     const initialMapState = {
         locationPermission: false,
-        locations: updatedLocations,
+        locations: [],
         userLocation: {
             latitude: -27.5263381,
             longitude: 153.0954163,
-            // Starts at "Indooroopilly Shopping Centre"
         },
         nearbyLocation: {}
     };
-    const [ mapState, setMapState ] = useState(initialMapState);
+    const [mapState, setMapState] = useState(initialMapState);
 
+    // Fetch location data from API
+    useEffect(() => {
+        async function fetchLocations() {
+            try {
+                const response = await axios.get(`${API_URL}/govapi`);
+                const locations = response.data
+                    .filter(location => isValidCoordinates(location.lat, location.long)) // Filter invalid coordinates
+                    .map(location => ({
+                        id: location.stn_num,
+                        name: location.name,
+                        coordinates: {
+                            latitude: parseFloat(location.lat),
+                            longitude: parseFloat(location.long)
+                        },
+                        distance: {
+                            metres: 0,
+                            nearby: false
+                        }
+                    }));
+                setMapState(prevState => ({
+                    ...prevState,
+                    locations
+                }));
+            } catch (error) {
+                console.error('Error fetching locations:', error);
+            }
+        }
+        fetchLocations();
+    }, []);
+
+    // Request location permission
     useEffect(() => {
         async function requestLocationPermission() {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status === 'granted') {
-                    setMapState({
-                        ...mapState,
-                        locationPermission: true
-                    });
+                setMapState({
+                    ...mapState,
+                    locationPermission: true
+                });
             }
         }
         requestLocationPermission();
     }, []);
 
+    // Track user location and find nearest location
     useEffect(() => {
-
-        // Function to retrieve location nearest to current user location
         function calculateDistance(userLocation) {
             const nearestLocations = mapState.locations.map(location => {
-                const metres = getDistance(
-                    userLocation,
-                    location.coordinates
-                );
-                location["distance"] = {
-                    metres: metres, 
-                    nearby: metres <= 100 ? true : false
+                const metres = getDistance(userLocation, location.coordinates);
+                location.distance = {
+                    metres: metres,
+                    nearby: metres <= 100
                 };
                 return location;
-            }).sort((previousLocation, thisLocation) => {
-                return previousLocation.distance.metres - thisLocation.distance.metres;
-            });
-            return nearestLocations.shift();
+            }).sort((a, b) => a.distance.metres - b.distance.metres);
+            return nearestLocations[0];
         }
 
-        if(mapState.locationPermission) {
+        if (mapState.locationPermission) {
             const subscription = Location.watchPositionAsync(
                 {
-                accuracy: Location.Accuracy.High,
-                distanceInterval: 10 // in meters
+                    accuracy: Location.Accuracy.High,
+                    distanceInterval: 10
                 },
                 location => {
-                const userLocation = {
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude
-                }
-                const nearbyLocation = calculateDistance(userLocation);
-                setMapState({
-                    ...mapState,
-                    userLocation,
-                    nearbyLocation: nearbyLocation
-                });
+                    const userLocation = {
+                        latitude: location.coords.latitude,
+                        longitude: location.coords.longitude
+                    };
+                    const nearbyLocation = calculateDistance(userLocation);
+                    setMapState(prevState => ({
+                        ...prevState,
+                        userLocation,
+                        nearbyLocation
+                    }));
                 }
             );
 
-        // Cleanup function
-        return () => {
-            if (subscription && typeof subscription.remove === 'function') {
-                subscription.remove();
-            }
-        };
+            // Cleanup function
+            return () => {
+                if (subscription && typeof subscription.remove === 'function') {
+                    subscription.remove();
+                }
+            };
         }
     }, [mapState.locationPermission]);
 
@@ -144,10 +167,10 @@ export default function ShowMap() {
             <MapView
                 camera={{
                     center: mapState.userLocation,
-                    pitch: 0, // Angle of 3D map
-                    heading: 0, // Compass direction
-                    altitude: 3000, // Zoom level for iOS
-                    zoom: 15 // Zoom level For Android
+                    pitch: 0,
+                    heading: 0,
+                    altitude: 3000,
+                    zoom: 15
                 }}
                 showsUserLocation={mapState.locationPermission}
                 style={styles.container}
@@ -159,13 +182,11 @@ export default function ShowMap() {
                         radius={100}
                         strokeWidth={3}
                         strokeColor="#A42DE8"
-                        fillColor={colorScheme == "dark" ? "rgba(128,0,128,0.5)" : "rgba(210,169,210,0.5)"}
+                        fillColor={colorScheme === "dark" ? "rgba(128,0,128,0.5)" : "rgba(210,169,210,0.5)"}
                     />
                 ))}
             </MapView>
-            <NearbyLocation
-                {...mapState.nearbyLocation}
-            />
+            <NearbyLocation {...mapState.nearbyLocation} />
         </>
     );
 }
