@@ -1,192 +1,323 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, Appearance, View, SafeAreaView, Text } from "react-native";
-import MapView, { Circle } from "react-native-maps";
+import { StyleSheet, Appearance, View, SafeAreaView, Text, Image, Dimensions } from "react-native";
+import MapView, { Circle, Marker, Callout } from "react-native-maps";
+import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { getDistance } from "geolib";
 import { API_URL } from "@/context/GlobalContext";
 import axios from 'axios';
 
-// Define Stylesheet
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    nearbyLocationSafeAreaView: {
-        backgroundColor: "black",
-    },
-    nearbyLocationView: {
-        padding: 20,
-    },
-    nearbyLocationText: {
-        color: "white",
-        lineHeight: 25
-    }
-});
+interface FloodWatch {
+  id: string;
+  name: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  distance: {
+    metres: number;
+    nearby: boolean;
+  };
+  xingname: string;
+  class: string;
+  tendency?: string;
+  hgt: number;
+  obs_time: string;
+}
+
+interface SpecialWarning {
+  id: string;
+  description: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  imageUrl: string;
+  // created_at: string;
+}
+
+interface MapState {
+  locationPermission: boolean;
+  floodwatches: FloodWatch[];
+  specialWarnings: SpecialWarning[];
+  userLocation: {
+    latitude: number;
+    longitude: number;
+  };
+  nearbyFloodwatch?: FloodWatch;
+}
 
 const colorScheme = Appearance.getColorScheme();
+const screenWidth = Dimensions.get("window").width;
 
-// Component for displaying nearest location and whether it's within 100 metres
-function NearbyLocation(props) {
-    if (typeof props.location !== "undefined") {
-        return (
-            <SafeAreaView style={styles.nearbyLocationSafeAreaView}>
-                <View style={styles.nearbyLocationView}>
-                    <Text style={styles.nearbyLocationText}>
-                        {props.location}
-                    </Text>
-                    {props.distance?.nearby &&
-                        <Text style={{
-                            ...styles.nearbyLocationText,
-                            fontWeight: "bold"
-                        }}>
-                            Within 100 Metres!
-                        </Text>
-                    }
-                </View>
-            </SafeAreaView>
-        );
-    }
-    return null;
-}
+const floodClassColor: Record<string, string> = {
+  "unknown": "#707070",
+  "below minor": "#007502",
+  "minor": "#29ccb9",
+  "moderate": "#f0b01d",
+  "major": "#c71c1c"
+};
 
-// Function to validate latitude and longitude
-function isValidCoordinates(lat, long) {
-    const latitude = parseFloat(lat);
-    const longitude = parseFloat(long);
+const floodWatchImage = {
+  "unknown": require('@/assets/images/bom_floodwatch_unknown.png'),
+  "below minor": require('@/assets/images/bom_floodwatch_below_minor.png'),
+  "minor": require('@/assets/images/bom_floodwatch_minor.png'),
+  "moderate": require('@/assets/images/bom_floodwatch_moderate.png'),
+  "major": require('@/assets/images/bom_floodwatch_major.png')
+};
 
-    return (
-        !isNaN(latitude) &&
-        !isNaN(longitude) &&
-        latitude >= -90 && latitude <= 90 &&
-        longitude >= -180 && longitude <= 180
-    );
-}
+const NearbyFloodwatch: React.FC<FloodWatch> = ({ name, distance }) => {
+  if (!name) return null;
+
+  return (
+    <SafeAreaView style={styles.nearbyFloodwatchSafeAreaView}>
+      <View style={styles.nearbyFloodwatchView}>
+        <Text style={styles.nearbyFloodwatchText}>{name}</Text>
+        {distance?.nearby && (
+          <Text style={[styles.nearbyFloodwatchText, styles.nearbyFloodwatchTextBold]}>
+            Within 100 Metres!
+          </Text>
+        )}
+      </View>
+    </SafeAreaView>
+  );
+};
+
+const isValidCoordinates = (lat: string, long: string): boolean => {
+  const latitude = parseFloat(lat);
+  const longitude = parseFloat(long);
+
+  return (
+    !isNaN(latitude) &&
+    !isNaN(longitude) &&
+    latitude >= -90 && latitude <= 90 &&
+    longitude >= -180 && longitude <= 180
+  );
+};
 
 export default function ShowMap() {
-    // Setup state for map data
-    const initialMapState = {
-        locationPermission: false,
-        locations: [],
-        userLocation: {
-            latitude: -27.5263381,
-            longitude: 153.0954163,
-        },
-        nearbyLocation: {}
+  const [mapState, setMapState] = useState<MapState>({
+    locationPermission: false,
+    floodwatches: [],
+    specialWarnings: [],
+    userLocation: {
+      latitude: -27.5263381,
+      longitude: 153.0954163,
+    },
+  });
+
+  // Fetch flood watches
+  useEffect(() => {
+    const fetchFloodwatches = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/govapi`);
+        const floodwatches = response.data
+          .filter((floodwatch: any) => isValidCoordinates(floodwatch.lat, floodwatch.long))
+          .map((floodwatch: any) => ({
+            id: floodwatch.stn_num,
+            name: floodwatch.name,
+            coordinates: {
+              latitude: parseFloat(floodwatch.lat),
+              longitude: parseFloat(floodwatch.long)
+            },
+            distance: {
+              metres: 0,
+              nearby: false
+            },
+            xingname: floodwatch.xingname,
+            class: floodwatch.class.toLowerCase(),
+            tendency: floodwatch.tendency,
+            hgt: floodwatch.hgt,
+            obs_time: floodwatch.obs_time,
+          }));
+        setMapState(prevState => ({ ...prevState, floodwatches }));
+      } catch (error) {
+        console.error('Error fetching floodwatches:', error);
+      }
     };
-    const [mapState, setMapState] = useState(initialMapState);
+    fetchFloodwatches();
+  }, []);
 
-    // Fetch location data from API
-    useEffect(() => {
-        async function fetchLocations() {
-            try {
-                const response = await axios.get(`${API_URL}/govapi`);
-                const locations = response.data
-                    .filter(location => isValidCoordinates(location.lat, location.long)) // Filter invalid coordinates
-                    .map(location => ({
-                        id: location.stn_num,
-                        name: location.name,
-                        coordinates: {
-                            latitude: parseFloat(location.lat),
-                            longitude: parseFloat(location.long)
-                        },
-                        distance: {
-                            metres: 0,
-                            nearby: false
-                        }
-                    }));
-                setMapState(prevState => ({
-                    ...prevState,
-                    locations
-                }));
-            } catch (error) {
-                console.error('Error fetching locations:', error);
-            }
+  // Fetch special warnings
+  useEffect(() => {
+    const fetchSpecialWarnings = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/specialwarning/warnings`);
+        const specialWarnings = response.data
+          .filter((warning: any) => isValidCoordinates(warning.lat, warning.long))
+          .map((warning: any) => ({
+            description: warning.name,
+            coordinates: {
+              latitude: parseFloat(warning.lat),
+              longitude: parseFloat(warning.long),
+            },
+            imageUrl: warning.image
+            // created_at: warning.created_at,
+          }));
+        setMapState(prevState => ({ ...prevState, specialWarnings }));
+      } catch (error) {
+        console.error('Error fetching special warnings:', error);
+      }
+    };
+    fetchSpecialWarnings();
+  }, []);
+
+  // Handle location permissions
+  useEffect(() => {
+    const requestLocationPermission = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        setMapState(prevState => ({ ...prevState, locationPermission: true }));
+      }
+    };
+    requestLocationPermission();
+  }, []);
+
+  // Calculate distances to floodwatches
+  useEffect(() => {
+    if (!mapState.locationPermission) return;
+
+    const calculateDistance = (userLocation: { latitude: number; longitude: number }) => {
+      return mapState.floodwatches.map(floodwatch => ({
+        ...floodwatch,
+        distance: {
+          metres: getDistance(userLocation, floodwatch.coordinates),
+          nearby: getDistance(userLocation, floodwatch.coordinates) <= 100
         }
-        fetchLocations();
-    }, []);
+      })).sort((a, b) => a.distance.metres - b.distance.metres)[0];
+    };
 
-    // Request location permission
-    useEffect(() => {
-        async function requestLocationPermission() {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status === 'granted') {
-                setMapState({
-                    ...mapState,
-                    locationPermission: true
-                });
-            }
-        }
-        requestLocationPermission();
-    }, []);
-
-    // Track user location and find nearest location
-    useEffect(() => {
-        function calculateDistance(userLocation) {
-            const nearestLocations = mapState.locations.map(location => {
-                const metres = getDistance(userLocation, location.coordinates);
-                location.distance = {
-                    metres: metres,
-                    nearby: metres <= 100
-                };
-                return location;
-            }).sort((a, b) => a.distance.metres - b.distance.metres);
-            return nearestLocations[0];
-        }
-
-        if (mapState.locationPermission) {
-            const subscription = Location.watchPositionAsync(
-                {
-                    accuracy: Location.Accuracy.High,
-                    distanceInterval: 10
-                },
-                location => {
-                    const userLocation = {
-                        latitude: location.coords.latitude,
-                        longitude: location.coords.longitude
-                    };
-                    const nearbyLocation = calculateDistance(userLocation);
-                    setMapState(prevState => ({
-                        ...prevState,
-                        userLocation,
-                        nearbyLocation
-                    }));
-                }
-            );
-
-            // Cleanup function
-            return () => {
-                if (subscription && typeof subscription.remove === 'function') {
-                    subscription.remove();
-                }
-            };
-        }
-    }, [mapState.locationPermission]);
-
-    return (
-        <>
-            <MapView
-                camera={{
-                    center: mapState.userLocation,
-                    pitch: 0,
-                    heading: 0,
-                    altitude: 3000,
-                    zoom: 15
-                }}
-                showsUserLocation={mapState.locationPermission}
-                style={styles.container}
-            >
-                {mapState.locations.map(location => (
-                    <Circle
-                        key={location.id}
-                        center={location.coordinates}
-                        radius={100}
-                        strokeWidth={3}
-                        strokeColor="#A42DE8"
-                        fillColor={colorScheme === "dark" ? "rgba(128,0,128,0.5)" : "rgba(210,169,210,0.5)"}
-                    />
-                ))}
-            </MapView>
-            <NearbyLocation {...mapState.nearbyLocation} />
-        </>
+    const subscription = Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.High,
+        distanceInterval: 10
+      },
+      location => {
+        const userLocation = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude
+        };
+        const nearbyFloodwatch = calculateDistance(userLocation);
+        setMapState(prevState => ({
+          ...prevState,
+          userLocation,
+          nearbyFloodwatch
+        }));
+      }
     );
+
+    return () => {
+      if (subscription && typeof subscription.remove === 'function') {
+        subscription.remove();
+      }
+    };
+  }, [mapState.locationPermission, mapState.floodwatches]);
+
+  const renderSpecialWarningMarker = (warning: SpecialWarning) => (
+    <Marker
+      image={require('@/assets/images/special_warning.png')}
+      key={warning.id}
+      coordinate={warning.coordinates}
+      title="Special Warning"
+    >
+      <Callout>
+        {/* Method 1: style*/}
+        {/* <Text style={{height: 200,flex: 1,marginTop: -85,width: 330,}}>
+          <Image resizeMode="cover" source={{ uri: warning.imageUrl }} style={{height: 200,width: 330}}></Image>
+        </Text> */}
+
+        {/* Method 2: svg*/}
+        {/* <Svg width={240} height={120}>
+          <ImageSvg 
+            width={"100%"}
+            height={"100%"}
+            preserveAspectRatio="xMidYMid slice"
+            href={{ uri: warning.imageUrl }}
+          />
+        </Svg> */}
+
+        {/* Method 3: webview*/}
+        <View style={styles.calloutContainer}>
+          {/* <Text style={styles.calloutTitle}>Special Warning</Text> */}
+          <Text style={styles.calloutDescription}>{warning.description}</Text>
+          <WebView style={{ height: 0.45*screenWidth , width: 0.6*screenWidth}} source={{ uri: warning.imageUrl }} />
+        </View>
+      </Callout>
+    </Marker>
+  );
+
+  return (
+    <>
+      <MapView
+        camera={{
+          center: mapState.userLocation,
+          pitch: 0,
+          heading: 0,
+          altitude: 3000,
+          zoom: 15
+        }}
+        showsUserLocation={mapState.locationPermission}
+        style={styles.container}
+      >
+        {/* Render Floodwatch Markers */}
+        {mapState.floodwatches.map(floodwatch => (
+          <React.Fragment key={floodwatch.id}>
+            <Marker
+              image={floodWatchImage[floodwatch.class]}
+              coordinate={floodwatch.coordinates}
+              title={floodwatch.name}
+              description={`${floodwatch.class.toUpperCase()}${floodwatch.tendency ? ` (${floodwatch.tendency})` : ''}`}
+            />
+            <Circle
+              center={floodwatch.coordinates}
+              radius={500}
+              strokeWidth={0}
+              strokeColor={floodClassColor[floodwatch.class]}
+              fillColor={colorScheme === "dark" ? "rgba(128,0,128,0.5)" : `${floodClassColor[floodwatch.class]}30`}
+            />
+          </React.Fragment>
+        ))}
+
+        {/* Render SpecialWarning Markers */}
+        {mapState.specialWarnings.map(renderSpecialWarningMarker)}
+      </MapView>
+      {mapState.nearbyFloodwatch && <NearbyFloodwatch {...mapState.nearbyFloodwatch} />}
+    </>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  nearbyFloodwatchSafeAreaView: {
+    backgroundColor: "black",
+  },
+  nearbyFloodwatchView: {
+    padding: 20,
+  },
+  nearbyFloodwatchText: {
+    color: "white",
+    lineHeight: 25
+  },
+  nearbyFloodwatchTextBold: {
+    fontWeight: "bold"
+  },
+  calloutContainer: {
+    width: 0.7 * screenWidth,
+    padding: 10,
+  },
+  calloutTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  calloutImage: {
+    width: 200,
+    height: 100,
+    marginBottom: 5,
+  },
+  calloutDescription: {
+    fontSize: 14,
+  },
+});
