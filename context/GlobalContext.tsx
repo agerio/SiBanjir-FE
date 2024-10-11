@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }: any) => {
 
     const signup = async (username: string, password: string, password2: string) => {
         try {
-            return await axios.post(`${API_URL}/user/signup`, { username, password, password2 });
+            return await axios.post(`${API_URL}/user/register`, { username, password, password2 });
         } catch (e) {
             return { error: true, msg: (e as any).response.data };
         }
