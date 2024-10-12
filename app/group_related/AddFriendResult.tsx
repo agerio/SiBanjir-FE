@@ -134,6 +134,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#fff',
         marginBottom: 10,
+        marginTop: 50,
     },
     queryText: {
         fontSize: 16,

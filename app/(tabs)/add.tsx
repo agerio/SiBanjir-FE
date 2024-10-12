@@ -1,21 +1,24 @@
-import React, { FC, useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Modal, ScrollView } from 'react-native';
-import { useAuth } from '@/context/GlobalContext'; // Assuming you have an auth context
+import React, { FC, useState, useEffect, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Modal, ScrollView, Animated, Dimensions } from 'react-native';
+import { useAuth } from '@/context/GlobalContext';
 import * as ImagePicker from 'expo-image-picker';
 import * as Camera from 'expo-camera';
-import * as Location from 'expo-location'; // Import module for location
+import * as Location from 'expo-location';
 import { API_URL } from "@/context/GlobalContext";
+import Cloud from '../../components/Cloud'; // Import the Cloud component
+
+const { width, height } = Dimensions.get("window");
 
 const AddFloodWarning: FC = () => {
     const [description, setDescription] = useState('');
     const [photoState, setPhotoState] = useState<{ uri?: string }>({});
     const [permissionStatus, requestPermission] = Camera.useCameraPermissions();
     const [modalVisible, setModalVisible] = useState(false);
-    const { authState } = useAuth(); // Get the authentication state (token)
+    const { authState } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [location, setLocation] = useState<{ lat: number; long: number } | null>(null); // Store location
+    const [location, setLocation] = useState<{ lat: number; long: number } | null>(null);
+    const scrollY = useRef(new Animated.Value(0)).current;
 
-    // Request permission and get user's location on component mount
     useEffect(() => {
         (async () => {
             let { status } = await Location.requestForegroundPermissionsAsync();
@@ -32,7 +35,6 @@ const AddFloodWarning: FC = () => {
         })();
     }, []);
 
-    // Function to handle image selection from the library
     async function handleImageLibraryPress() {
         setModalVisible(false);
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -47,7 +49,6 @@ const AddFloodWarning: FC = () => {
         }
     }
 
-    // Function to handle image capture from the camera
     async function handleCameraPress() {
         setModalVisible(false);
         if (!permissionStatus || !permissionStatus.granted) {
@@ -67,19 +68,16 @@ const AddFloodWarning: FC = () => {
         }
     }
 
-    // Function to handle retaking the photo
     function handleRetake() {
         setPhotoState({});
     }
 
-    // Reset form after submission
     const resetForm = () => {
         setDescription('');
         setPhotoState({});
         setLoading(false);
     };
 
-    // Function to submit the flood warning
     const handleSubmit = async () => {
         if (!description || !photoState.uri || !location) {
             Alert.alert("Missing Fields", "Please provide a description, upload an image, and ensure location access.");
@@ -87,19 +85,15 @@ const AddFloodWarning: FC = () => {
         }
 
         setLoading(true);
-        console.log('meow') 
-        console.log(photoState)
         try {
-            const response = await fetch(photoState.uri); // Fetch the image as a blob
-            const blob = await response.blob(); // Convert the response to a blob
+            const response = await fetch(photoState.uri);
+            const blob = await response.blob();
 
             let formData = new FormData();
-            formData.append('name', description); // Description becomes 'name' in the backend
-            formData.append('image', {uri:photoState.uri, type:'image/jpeg', name:'upload.jpeg'}); // Append blob with a filename
-            // formData.append('image', blob, 'flood_image.jpg'); // Append blob with a filename
-            formData.append('lat', location.lat.toString()); // Append latitude
-            formData.append('long', location.long.toString()); // Append longitude
-            console.log(formData)
+            formData.append('name', description);
+            formData.append('image', {uri:photoState.uri, type:'image/jpeg', name:'upload.jpeg'});
+            formData.append('lat', location.lat.toString());
+            formData.append('long', location.long.toString());
 
             const header = new Headers();
             header.append('Authorization', `Token ${authState?.token}`);
@@ -115,7 +109,7 @@ const AddFloodWarning: FC = () => {
 
             if (apiResponse.status === 201) {
                 Alert.alert('Success', 'Flood warning submitted successfully!');
-                resetForm();  // Reset the form on success
+                resetForm();
             } else {
                 Alert.alert('Error', result.message || 'An error occurred while submitting.');
             }
@@ -132,14 +126,22 @@ const AddFloodWarning: FC = () => {
     }
 
     return (
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
-            <View style={styles.container}>
+        <View style={styles.container}>
+            <Animated.ScrollView
+                contentContainerStyle={styles.scrollContent}
+                onScroll={Animated.event(
+                    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                    { useNativeDriver: false }
+                )}
+                scrollEventThrottle={16}
+            >
                 <Text style={styles.label}>Description</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="Enter description"
                     value={description}
                     onChangeText={setDescription}
+                    placeholderTextColor="#999"
                 />
 
                 <TouchableOpacity style={styles.uploadBox} onPress={openModal}>
@@ -167,41 +169,48 @@ const AddFloodWarning: FC = () => {
                     </TouchableOpacity>
                 )}
 
-                <Modal
-                    animationType="slide"
-                    transparent={true}
-                    visible={modalVisible}
-                    onRequestClose={() => setModalVisible(false)}
-                >
-                    <View style={[styles.container, { justifyContent: 'center' }]}>
-                        <View style={styles.modalView}>
-                            <TouchableOpacity style={styles.modalButton} onPress={handleCameraPress}>
-                                <Text style={styles.modalButtonText}>Capture Image</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.modalButton} onPress={handleImageLibraryPress}>
-                                <Text style={styles.modalButtonText}>Upload from Library</Text>
-                            </TouchableOpacity>
-                        </View>
+                <View style={styles.bottomSpace} />
+            </Animated.ScrollView>
+
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={[styles.container, { justifyContent: 'center' }]}>
+                    <View style={styles.modalView}>
+                        <TouchableOpacity style={styles.modalButton} onPress={handleCameraPress}>
+                            <Text style={styles.modalButtonText}>Capture Image</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.modalButton} onPress={handleImageLibraryPress}>
+                            <Text style={styles.modalButtonText}>Upload from Library</Text>
+                        </TouchableOpacity>
                     </View>
-                </Modal>
-            </View>
-        </ScrollView>
+                </View>
+            </Modal>
+
+            <Cloud scrollY={scrollY} orientation="left" />
+            <Cloud scrollY={scrollY} orientation="right" />
+        </View>
     );
 };
-
-export default AddFloodWarning;
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
-        justifyContent: 'center',
         backgroundColor: '#1D1D2E',
+    },
+    scrollContent: {
+        flexGrow: 1,
+        padding: 20,
+        paddingBottom: 120, // Increased to accommodate the cloud pattern
     },
     label: {
         fontSize: 18,
         color: '#fff',
         marginBottom: 10,
+        marginTop: 100,
     },
     input: {
         backgroundColor: '#333',
@@ -209,6 +218,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 10,
         marginBottom: 20,
+        marginTop: 10
     },
     uploadBox: {
         width: '100%',
@@ -218,6 +228,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 20,
+        marginTop: 5,
     },
     photoImage: {
         width: '100%',
@@ -247,7 +258,7 @@ const styles = StyleSheet.create({
         padding: 15,
         borderRadius: 10,
         alignItems: 'center',
-        marginTop: 20,
+        marginTop: 15,
     },
     submitButtonText: {
         color: '#fff',
@@ -276,5 +287,11 @@ const styles = StyleSheet.create({
         fontSize: 14,
         textAlign: 'center',
         marginBottom: 10,
+        marginTop: 15,
+    },
+    bottomSpace: {
+        height: 100, // Space to ensure content isn't hidden behind the cloud
     },
 });
+
+export default AddFloodWarning;

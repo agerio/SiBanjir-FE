@@ -1,20 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { SafeAreaView, View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { API_URL, useAuth } from '@/context/GlobalContext';
+import Cloud from '../../components/Cloud';
 
 type Friend = {
     id: string;
     username: string;
     telephone_number: string;
-    profile_picture: string; // URL of the image
+    profile_picture: string;
 };
 
 export default function Group() {
     const [friends, setFriends] = useState<Friend[]>([]);
     const router = useRouter();
     const { authState } = useAuth();
+    const scrollY = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         const fetchFriends = async () => {
@@ -25,7 +27,6 @@ export default function Group() {
                     },
                 });
 
-                // Remove duplicates based on username
                 const uniqueFriendsMap = new Map();
                 response.data.forEach((friend: Friend) => {
                     if (!uniqueFriendsMap.has(friend.username)) {
@@ -64,18 +65,29 @@ export default function Group() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <Text style={styles.header}>Friend & Family</Text>
-            <FlatList
-                data={friends}
-                keyExtractor={(item) => item.id}
-                renderItem={renderItem}
-            />
-            <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => router.push('/group_related/add_friend')}
-            >
-                <Text style={styles.addButtonText}>+ Add Friend</Text>
-            </TouchableOpacity>
+            <View style={styles.content}>
+                <Text style={styles.header}>Friend & Family</Text>
+                <Animated.FlatList
+                    data={friends}
+                    keyExtractor={(item) => item.id}
+                    renderItem={renderItem}
+                    onScroll={Animated.event(
+                        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                        { useNativeDriver: false }
+                    )}
+                    scrollEventThrottle={16}
+                    style={styles.list}
+                />
+                <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() => router.push('/group_related/add_friend')}
+                >
+                    <Text style={styles.addButtonText}>+ Add Friend</Text>
+                </TouchableOpacity>
+            </View>
+            
+            <Cloud scrollY={scrollY} orientation="left" style={styles.cloudLeft} />
+            <Cloud scrollY={scrollY} orientation="right" style={styles.cloudRight} />
         </SafeAreaView>
     );
 }
@@ -83,14 +95,22 @@ export default function Group() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
         backgroundColor: '#1e1e30',
+    },
+    content: {
+        flex: 1,
+        padding: 20,
+        zIndex: 1,
     },
     header: {
         fontSize: 24,
         fontWeight: 'bold',
         color: '#fff',
         marginBottom: 20,
+        marginLeft: 15
+    },
+    list: {
+        flex: 1,
     },
     friendItem: {
         flexDirection: 'row',
@@ -136,9 +156,25 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: 'center',
         marginTop: 20,
+        marginBottom: 25,
+        zIndex: 2,
     },
     addButtonText: {
         color: '#fff',
         fontSize: 16,
+    },
+    cloudLeft: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        zIndex: 0,
+    },
+    cloudRight: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        bottom: 0,
+        zIndex: 0,
     },
 });

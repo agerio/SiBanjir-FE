@@ -15,9 +15,11 @@ const styles = StyleSheet.create({
     padding: 20,
     flex: 1,
     alignItems: "center",
+    backgroundColor: "#1e1e30",
   },
   photoFullView: {
-    marginBottom: 20,
+    marginBottom: 5,
+    marginTop: 10
   },
   photoEmptyView: {
     borderWidth: 3,
@@ -26,7 +28,7 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     width: imageSize,
     height: imageSize,
-    marginBottom: 20,
+    marginBottom: 10,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -37,7 +39,7 @@ const styles = StyleSheet.create({
   },
   buttonView: {
     justifyContent: "center",
-    marginBottom: 20,
+    marginBottom: 5,
   },
   usernameContainer: {
     width: "100%",
@@ -56,7 +58,7 @@ const styles = StyleSheet.create({
     padding: 10,
     fontSize: 16,
     backgroundColor: "#fff",
-    marginBottom: 15,
+    marginBottom: 10,
   },
   passwordSection: {
     width: "100%",

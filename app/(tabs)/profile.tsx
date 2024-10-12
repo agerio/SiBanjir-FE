@@ -1,20 +1,23 @@
-import React, { useState, useCallback } from "react";
-import { SafeAreaView, View, Image, Text, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
+import React, { useState, useCallback, useRef } from "react";
+import { SafeAreaView, View, Image, Text, StyleSheet, TouchableOpacity, Dimensions, Animated } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { API_URL, useAuth } from "@/context/GlobalContext";
-import { useFocusEffect } from '@react-navigation/native'; // Import useFocusEffect
+import { useFocusEffect } from '@react-navigation/native';
+import Cloud from '../../components/Cloud'; // Import the Cloud component
 
 const { width, height } = Dimensions.get("window");
 const imageSize = height / 6;
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
     flex: 1,
-    alignItems: "center",
     backgroundColor: "#1e1e30"
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 120, // Increased to accommodate the cloud pattern
   },
   profileSection: {
     alignItems: "center",
@@ -37,13 +40,15 @@ const styles = StyleSheet.create({
   photoFullImage: {
     width: imageSize,
     height: imageSize,
-    borderRadius: imageSize / 2
+    borderRadius: imageSize / 2,
+    marginTop: 12
   },
   usernameText: {
     fontSize: 24,
     color: "#fff",
     fontWeight: "bold",
-    marginBottom: 10
+    marginBottom: 10,
+    marginTop: 12
   },
   menuItem: {
     flexDirection: "row",
@@ -63,7 +68,8 @@ const styles = StyleSheet.create({
   logoutButton: {
     position: "absolute",
     top: 20,
-    right: 20
+    right: 20,
+    marginTop: 5
   },
   logoutText: {
     color: "#ff5b5b",
@@ -73,16 +79,19 @@ const styles = StyleSheet.create({
     color: "#999",
     textAlign: "center",
     marginTop: 30
-  }
+  },
+  bottomSpace: {
+    height: 100, // Space to ensure content isn't hidden behind the cloud
+  },
 });
 
 export default function Profile() {
   const [photoState, setPhotoState] = useState<{ uri?: string }>({});
   const [username, setUsername] = useState("");
   const router = useRouter();
-  const { authState, onSignout } = useAuth(); // Include authState to get the token
+  const { authState, onSignout } = useAuth();
+  const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Use useFocusEffect to refetch data when the screen gains focus
   useFocusEffect(
     useCallback(() => {
       const fetchUserData = async () => {
@@ -94,7 +103,6 @@ export default function Profile() {
           });
           setUsername(response.data.username || "");
 
-          // Set the profile picture URI if available
           if (response.data.profile_picture) {
             setPhotoState({ uri: response.data.profile_picture });
           } else {
@@ -111,15 +119,14 @@ export default function Profile() {
 
   async function handleChangePress() {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Only images
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [1, 1], // Square aspect ratio
+      aspect: [1, 1],
       quality: 1,
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       setPhotoState(result.assets[0]);
-      // Optionally, you can implement code to upload the new profile picture to the server here
     }
   }
 
@@ -134,61 +141,73 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.logoutButton} onPress={handleSignout}>
-        <Text style={styles.logoutText}>Logout</Text>
-      </TouchableOpacity>
-      <View style={styles.profileSection}>
-        {hasPhoto ? (
-          <Image
-            style={styles.photoFullImage}
-            resizeMode="cover"
-            source={{ uri: photoState.uri }}
-          />
-        ) : (
-          <View style={styles.photoEmptyView}></View>
+      <Animated.ScrollView
+        contentContainerStyle={styles.scrollContent}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
         )}
-        <Text style={styles.usernameText}>{username}</Text>
-      </View>
-
-      {/* Menu options with navigation to different pages */}
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => router.push('../profile_page_related/update_profile')}
+        scrollEventThrottle={16}
       >
-        <Text style={styles.menuItemText}>Profile Setting</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleSignout}>
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+        <View style={styles.profileSection}>
+          {hasPhoto ? (
+            <Image
+              style={styles.photoFullImage}
+              resizeMode="cover"
+              source={{ uri: photoState.uri }}
+            />
+          ) : (
+            <View style={styles.photoEmptyView}></View>
+          )}
+          <Text style={styles.usernameText}>{username}</Text>
+        </View>
 
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => router.push('../profile_page_related/notification_setting')}
-      >
-        <Text style={styles.menuItemText}>Notification</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('../profile_page_related/update_profile')}
+        >
+          <Text style={styles.menuItemText}>Profile Setting</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => router.push('../profile_page_related/contactUs')}
-      >
-        <Text style={styles.menuItemText}>Contact Us</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('../profile_page_related/notification_setting')}
+        >
+          <Text style={styles.menuItemText}>Notification</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => router.push('../profile_page_related/faq')}
-      >
-        <Text style={styles.menuItemText}>FAQ</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('../profile_page_related/contactUs')}
+        >
+          <Text style={styles.menuItemText}>Contact Us</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => router.push('../profile_page_related/feedback')}
-      >
-        <Text style={styles.menuItemText}>Send Us Feedback</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('../profile_page_related/faq')}
+        >
+          <Text style={styles.menuItemText}>FAQ</Text>
+        </TouchableOpacity>
 
-      <Text style={styles.aboutText}>
-        The developer team as international students want to help Australia's community related to floods
-      </Text>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('../profile_page_related/feedback')}
+        >
+          <Text style={styles.menuItemText}>Send Us Feedback</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.aboutText}>
+          The developer team as international students want to help Australia's community related to floods
+        </Text>
+        
+        <View style={styles.bottomSpace} />
+      </Animated.ScrollView>
+      <Cloud scrollY={scrollY} orientation="left" />
+      <Cloud scrollY={scrollY} orientation="right" />
     </SafeAreaView>
   );
 }
