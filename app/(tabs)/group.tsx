@@ -49,7 +49,7 @@ export default function Group() {
                 //     pathname: '../(tabs)/index',
                 //     params: { friendId: item.id },
                 // })}
-                onPress={() => router.push('../(tabs)/index')}
+                onPress={() => router.push({ pathname:"/", params: { username: item.username }})}
             >
                 <Text style={styles.buttonText}>View Loc</Text>
             </TouchableOpacity>
@@ -66,7 +66,7 @@ export default function Group() {
             />
             <TouchableOpacity
                 style={styles.addButton}
-                onPress={() => router.push('/')}
+                onPress={() => router.push('/group_related/add_friend')}
             >
                 <Text style={styles.addButtonText}>+ Add Friend</Text>
             </TouchableOpacity>
