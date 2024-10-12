@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { StyleSheet, Appearance, View, SafeAreaView, Text, Image, Dimensions, Alert, Button } from "react-native";
+import { StyleSheet, Appearance, View, SafeAreaView, Text, Image, Dimensions, Alert, Button, TouchableOpacity  } from "react-native";
 import MapView, { Circle, Marker, Callout, Region } from "react-native-maps";
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { API_URL } from "@/context/GlobalContext";
 import axios from 'axios';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 interface FloodWatch {
   id: string;
@@ -102,94 +103,92 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation }) => {
     },
   });
 
-  // Fetch flood watches
+  const refreshData = async () => {
+    await fetchFloodwatches();
+    await fetchSpecialWarnings();
+    await fetchFriendLocation();
+  };
+  
+  const requestLocationPermission = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status === 'granted') {
+      setMapState(prevState => ({ ...prevState, locationPermission: true }));
+    }
+  };
+
+  const fetchFloodwatches = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/govapi`);
+      const floodwatches = response.data
+        .filter((floodwatch: any) => isValidCoordinates(floodwatch.lat, floodwatch.long))
+        .map((floodwatch: any) => ({
+          id: floodwatch.stn_num,
+          name: floodwatch.name,
+          coordinates: {
+            latitude: parseFloat(floodwatch.lat),
+            longitude: parseFloat(floodwatch.long)
+          },
+          xingname: floodwatch.xingname,
+          class: floodwatch.class.toLowerCase(),
+          tendency: floodwatch.tendency,
+          hgt: floodwatch.hgt,
+          obs_time: floodwatch.obs_time,
+        }));
+      setMapState(prevState => ({ ...prevState, floodwatches }));
+    } catch (error) {
+      console.error('Error fetching floodwatches:', error);
+    }
+  };
+
+  const fetchSpecialWarnings = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/specialwarning/warnings`);
+      const specialWarnings = response.data
+        .filter((warning: any) => isValidCoordinates(warning.lat, warning.long))
+        .map((warning: any) => ({
+          id: warning.id.toString(),
+          description: warning.name,
+          coordinates: {
+            latitude: parseFloat(warning.lat),
+            longitude: parseFloat(warning.long),
+          },
+          image_url: warning.image,
+          created_at: warning.created_at,
+        }));
+      setMapState(prevState => ({ ...prevState, specialWarnings }));
+    } catch (error) {
+      console.error('Error fetching special warnings:', error);
+    }
+  };
+
+  const fetchFriendLocation = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/user/sendLocation`);
+      const friendLocation = response.data
+        .filter((friend_location: any) => isValidCoordinates(friend_location.lat, friend_location.long))
+        .map((friend_location: any) => ({
+          id: friend_location.friend_username,
+          last_login: friend_location.last_login,
+          coordinates: {
+            latitude: parseFloat(friend_location.lat),
+            longitude: parseFloat(friend_location.long),
+          },
+          image_url: friend_location.friend_profile_picture,
+          created_at: friend_location.created_at,
+        }));
+      setMapState(prevState => ({ ...prevState, friendLocation }));
+    } catch (error) {
+      console.error('Error fetching special friend_locations:', error);
+    }
+  };
+  
   useEffect(() => {
-    const fetchFloodwatches = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/govapi`);
-        const floodwatches = response.data
-          .filter((floodwatch: any) => isValidCoordinates(floodwatch.lat, floodwatch.long))
-          .map((floodwatch: any) => ({
-            id: floodwatch.stn_num,
-            name: floodwatch.name,
-            coordinates: {
-              latitude: parseFloat(floodwatch.lat),
-              longitude: parseFloat(floodwatch.long)
-            },
-            xingname: floodwatch.xingname,
-            class: floodwatch.class.toLowerCase(),
-            tendency: floodwatch.tendency,
-            hgt: floodwatch.hgt,
-            obs_time: floodwatch.obs_time,
-          }));
-        setMapState(prevState => ({ ...prevState, floodwatches }));
-      } catch (error) {
-        console.error('Error fetching floodwatches:', error);
-      }
-    };
+    requestLocationPermission();
     fetchFloodwatches();
-  }, []);
-
-  // Fetch special warnings
-  useEffect(() => {
-    const fetchSpecialWarnings = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/specialwarning/warnings`);
-        const specialWarnings = response.data
-          .filter((warning: any) => isValidCoordinates(warning.lat, warning.long))
-          .map((warning: any) => ({
-            id: warning.id.toString(),
-            description: warning.name,
-            coordinates: {
-              latitude: parseFloat(warning.lat),
-              longitude: parseFloat(warning.long),
-            },
-            image_url: warning.image,
-            created_at: warning.created_at,
-          }));
-        setMapState(prevState => ({ ...prevState, specialWarnings }));
-      } catch (error) {
-        console.error('Error fetching special warnings:', error);
-      }
-    };
     fetchSpecialWarnings();
-  }, []);
-
-  // Fetch friend location
-  useEffect(() => {
-    const fetchFriendLocation = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/user/sendLocation`);
-        const friendLocation = response.data
-          .filter((friend_location: any) => isValidCoordinates(friend_location.lat, friend_location.long))
-          .map((friend_location: any) => ({
-            id: friend_location.friend_username,
-            last_login: friend_location.last_login,
-            coordinates: {
-              latitude: parseFloat(friend_location.lat),
-              longitude: parseFloat(friend_location.long),
-            },
-            image_url: friend_location.friend_profile_picture,
-            created_at: friend_location.created_at,
-          }));
-        setMapState(prevState => ({ ...prevState, friendLocation }));
-      } catch (error) {
-        console.error('Error fetching special friend_locations:', error);
-      }
-    };
     fetchFriendLocation();
   }, []);
 
-  // Handle location permissions
-  useEffect(() => {
-    const requestLocationPermission = async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        setMapState(prevState => ({ ...prevState, locationPermission: true }));
-      }
-    };
-    requestLocationPermission();
-  }, []);
 
   // Handle granted permission
   useEffect(() => {
@@ -346,6 +345,7 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation }) => {
           zoom: 15
         }}
         showsUserLocation={mapState.locationPermission}
+        customMapStyle={colorScheme === 'dark' ? darkMapStyle : []}
         style={styles.container}
       >
         {/* Render Floodwatch Markers */}
@@ -357,7 +357,11 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation }) => {
         {/* Render FriendLocation Markers */}
         {mapState.friendLocation.map(renderFriendLocation)}
       </MapView>
-      {/* <Button title="Focus on a Flood Watch" onPress={() => focusOnMarker('bangsat')} /> */}
+      <TouchableOpacity style={styles.refreshButton} onPress={refreshData}>
+        <Ionicons name="refresh" size={24} color="gray" />
+        <Text style={{color:'gray', fontWeight:'bold'}}>Refresh</Text>
+      </TouchableOpacity>
+      {/* <Button title="Focus on a Flood Watch" onPress={() => focusOnMarker('14')} /> */}
     </>
   );
 };
@@ -395,6 +399,283 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'blue',
   },
+  refreshButton: {
+    position: 'absolute',
+    opacity: 0.80,
+    bottom: 10,
+    right: 10,
+    backgroundColor: 'white',
+    borderRadius: 30,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
 });
+
+const darkMapStyle = [
+  {
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#0a1c2d" // Even darker muted blue-gray
+      }
+    ]
+  },
+  {
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#4a6662" // Softer, less saturated teal
+      }
+    ]
+  },
+  {
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      {
+        "color": "#0b1d2d" // Darker stroke with less intensity
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.country",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      {
+        "color": "#31484e" // More muted gray-blue
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.land_parcel",
+    "elementType": "labels",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.land_parcel",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#4b5f6c" // Even more muted slate gray
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.province",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      {
+        "color": "#31484e" // More muted gray-blue stroke
+      }
+    ]
+  },
+  {
+    "featureType": "landscape.man_made",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      {
+        "color": "#253f5c" // Darker, less vibrant bluish-gray
+      }
+    ]
+  },
+  {
+    "featureType": "landscape.natural",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#01172a" // More muted, dark blue
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#1c2c46" // Less vibrant, more muted dark blue-gray
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "labels.text",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#4d6b74" // Even more subdued blue-gray
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      {
+        "color": "#0a1c2d" // Darker muted stroke color
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "geometry.fill",
+    "stylers": [
+      {
+        "color": "#01172a" // Darker, more muted park color
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#2a5b59" // Softer, grayish green
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#1f334e" // Darker road color with less vibrancy
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#5e6c7c" // Softer, muted road text
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      {
+        "color": "#0a1c2d" // Darker muted stroke for roads
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#1a3e4a" // Slightly darker highway color
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      {
+        "color": "#163d46" // Muted highway stroke
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#7c9299" // More muted highway text
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      {
+        "color": "#01172a" // Darker highway label stroke
+      }
+    ]
+  },
+  {
+    "featureType": "road.local",
+    "elementType": "labels",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "transit",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#5e6e7a" // Softer, more muted transit text
+      }
+    ]
+  },
+  {
+    "featureType": "transit",
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      {
+        "color": "#0a1c2d" // Darker muted stroke
+      }
+    ]
+  },
+  {
+    "featureType": "transit.line",
+    "elementType": "geometry.fill",
+    "stylers": [
+      {
+        "color": "#1c2c46" // Less vibrant, muted transit line
+      }
+    ]
+  },
+  {
+    "featureType": "transit.station",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#253645" // Muted dark gray
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#060c18" // Darker water with more gray
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#3e5854" // More muted water text
+      }
+    ]
+  }
+];
 
 export default ShowMap;
