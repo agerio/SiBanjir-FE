@@ -1,40 +1,55 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView, View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
-import { useRouter } from 'expo-router';  // Import useRouter from expo-router
+import { useRouter } from 'expo-router';
+import axios from 'axios';
+import { API_URL, useAuth } from '@/context/GlobalContext';
 
-// Define a type for your friend items
 type Friend = {
     id: string;
-    name: string;
-    phone: string;
-    image: any;  // Add image field
+    username: string;
+    telephone_number: string;
+    profile_picture: string; // URL of the image
 };
 
-const friends: Friend[] = [
-    { id: '1', name: 'Andrew', phone: '894 4390', image: require('../../assets/images/Andrew.png') },
-    { id: '2', name: 'Amber', phone: '984 3920', image: require('../../assets/images/Amber.png') },
-    { id: '3', name: 'Dave', phone: '435 8912', image: require('../../assets/images/Dave.png') },
-    { id: '4', name: 'Daniella', phone: '687 2340', image: require('../../assets/images/daniella.png') },
-    { id: '5', name: 'Ellen', phone: '989 9744', image: require('../../assets/images/ellen.png') },
-    { id: '6', name: 'Elliote', phone: '676 0053', image: require('../../assets/images/Elliote.png') },
-];
-
 export default function Group() {
-    const router = useRouter();  // Use useRouter for navigation
+    const [friends, setFriends] = useState<Friend[]>([]);
+    const router = useRouter();
+    const { authState } = useAuth();
 
-    const renderItem = ({ item }: { item: Friend }) => (  // Provide explicit typing for item
+    useEffect(() => {
+        const fetchFriends = async () => {
+            try {
+                const response = await axios.get(`${API_URL}/user/listFriend`, {
+                    headers: {
+                        'Authorization': `Token ${authState?.token}`,
+                    },
+                });
+                setFriends(response.data);
+            } catch (error) {
+                console.error('Error fetching friends:', error);
+            }
+        };
+        fetchFriends();
+    }, [authState]);
+
+    const renderItem = ({ item }: { item: Friend }) => (
         <View style={styles.friendItem}>
-            {/* Display the friend's profile image */}
-            <Image source={item.image} style={styles.profileImage} />
-
-            <View>
-                <Text style={styles.friendName}>{item.name}</Text>
-                <Text style={styles.friendPhone}>{item.phone}</Text>
+            {item.profile_picture ? (
+                <Image source={{ uri: item.profile_picture }} style={styles.profileImage} />
+            ) : (
+                <View style={styles.profileImagePlaceholder}></View>
+            )}
+            <View style={{ flex: 1 }}>
+                <Text style={styles.friendName}>{item.username}</Text>
+                <Text style={styles.friendPhone}>{item.telephone_number}</Text>
             </View>
-
             <TouchableOpacity
                 style={styles.viewLocButton}
-                onPress={() => router.push('../(tabs)/index')} // Navigate to the location page
+                // onPress={() => router.push({
+                //     pathname: '../(tabs)/index',
+                //     params: { friendId: item.id },
+                // })}
+                onPress={() => router.push('../(tabs)/index')}
             >
                 <Text style={styles.buttonText}>View Loc</Text>
             </TouchableOpacity>
@@ -51,7 +66,7 @@ export default function Group() {
             />
             <TouchableOpacity
                 style={styles.addButton}
-                onPress={() => router.push('../group_related/add_friend')} // Navigate to Add Friend Search Page
+                onPress={() => router.push('/')}
             >
                 <Text style={styles.addButtonText}>+ Add Friend</Text>
             </TouchableOpacity>
@@ -73,8 +88,7 @@ const styles = StyleSheet.create({
     },
     friendItem: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',  // Align items vertically
+        alignItems: 'center',
         padding: 15,
         backgroundColor: '#2b2b4b',
         borderRadius: 10,
@@ -83,8 +97,15 @@ const styles = StyleSheet.create({
     profileImage: {
         width: 50,
         height: 50,
-        borderRadius: 25,  // To make the image round
-        marginRight: 15,  // Add some space between the image and the text
+        borderRadius: 25,
+        marginRight: 15,
+    },
+    profileImagePlaceholder: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: '#ccc',
+        marginRight: 15,
     },
     friendName: {
         fontSize: 18,
