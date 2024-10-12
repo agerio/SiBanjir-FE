@@ -1,15 +1,20 @@
-import React, { useState } from "react";
-import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
+import React, { useState, useRef } from "react";
+import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated } from "react-native";
 import { FontAwesome } from '@expo/vector-icons';
+import Cloud from '../../components/Cloud'; // Import the Cloud component
 
-const { height } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: "#1e1e30"
+    },
+    scrollContent: {
+        flexGrow: 1,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#1e1e30"
+        paddingBottom: 120, // Increased to accommodate the cloud pattern
     },
     header: {
         fontSize: 24,
@@ -49,59 +54,76 @@ const styles = StyleSheet.create({
     },
     inactiveButtonText: {
         color: "#000" // White text for inactive button
-    }
+    },
+    bottomSpace: {
+        height: 100, // Space to ensure content isn't hidden behind the cloud
+    },
 });
 
 export default function NotificationSetting() {
     const [isNotificationOn, setIsNotificationOn] = useState(true); // Notifications are ON by default
+    const scrollY = useRef(new Animated.Value(0)).current;
 
     return (
         <SafeAreaView style={styles.container}>
-            <Text style={styles.header}>Notification Setting</Text>
-
-            <View style={styles.iconContainer}>
-                {isNotificationOn ? (
-                    <FontAwesome name="bell" size={60} color="#000" />
-                ) : (
-                    <FontAwesome name="bell-slash" size={60} color="#000" />
+            <Animated.ScrollView
+                contentContainerStyle={styles.scrollContent}
+                onScroll={Animated.event(
+                    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                    { useNativeDriver: false }
                 )}
-            </View>
+                scrollEventThrottle={16}
+            >
+                <Text style={styles.header}>Notification Setting</Text>
 
-            <View style={styles.buttonContainer}>
-                {/* Turn On Button */}
-                <TouchableOpacity
-                    style={[
-                        styles.button,
-                        isNotificationOn ? styles.inactiveButton : styles.activeButton
-                    ]}
-                    onPress={() => setIsNotificationOn(true)}
-                    disabled={isNotificationOn} // Disable if notifications are already ON
-                >
-                    <Text style={[
-                        styles.buttonText,
-                        isNotificationOn ? styles.inactiveButtonText : null
-                    ]}>
-                        Turn On
-                    </Text>
-                </TouchableOpacity>
+                <View style={styles.iconContainer}>
+                    {isNotificationOn ? (
+                        <FontAwesome name="bell" size={60} color="#000" />
+                    ) : (
+                        <FontAwesome name="bell-slash" size={60} color="#000" />
+                    )}
+                </View>
 
-                {/* Turn Off Button */}
-                <TouchableOpacity
-                    style={[
-                        styles.button,
-                        isNotificationOn ? styles.activeButton : styles.inactiveButton
-                    ]}
-                    onPress={() => setIsNotificationOn(false)}
-                    disabled={!isNotificationOn} // Disable if notifications are already OFF
-                >
-                    <Text style={[
-                        styles.buttonText,
-                        isNotificationOn ? null : styles.inactiveButtonText
-                    ]}>
-                        Turn Off
-                    </Text>
-                </TouchableOpacity>
-            </View>
+                <View style={styles.buttonContainer}>
+                    {/* Turn On Button */}
+                    <TouchableOpacity
+                        style={[
+                            styles.button,
+                            isNotificationOn ? styles.inactiveButton : styles.activeButton
+                        ]}
+                        onPress={() => setIsNotificationOn(true)}
+                        disabled={isNotificationOn} // Disable if notifications are already ON
+                    >
+                        <Text style={[
+                            styles.buttonText,
+                            isNotificationOn ? styles.inactiveButtonText : null
+                        ]}>
+                            Turn On
+                        </Text>
+                    </TouchableOpacity>
+
+                    {/* Turn Off Button */}
+                    <TouchableOpacity
+                        style={[
+                            styles.button,
+                            isNotificationOn ? styles.activeButton : styles.inactiveButton
+                        ]}
+                        onPress={() => setIsNotificationOn(false)}
+                        disabled={!isNotificationOn} // Disable if notifications are already OFF
+                    >
+                        <Text style={[
+                            styles.buttonText,
+                            isNotificationOn ? null : styles.inactiveButtonText
+                        ]}>
+                            Turn Off
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.bottomSpace} />
+            </Animated.ScrollView>
+            
+            <Cloud scrollY={scrollY} orientation="left" />
         </SafeAreaView>
     );
 }
