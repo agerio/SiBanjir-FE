@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { API_URL, useAuth } from "@/context/GlobalContext";
 import { useFocusEffect } from '@react-navigation/native';
-import Cloud from '../../components/Cloud'; // Import the Cloud component
+import Cloud from '../../components/Cloud';
 
 const { width, height } = Dimensions.get("window");
 const imageSize = height / 6;
@@ -17,7 +17,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 120, // Increased to accommodate the cloud pattern
+    paddingBottom: 120,
+    paddingTop: 60, // Added to account for the logout button
   },
   profileSection: {
     alignItems: "center",
@@ -41,7 +42,7 @@ const styles = StyleSheet.create({
     width: imageSize,
     height: imageSize,
     borderRadius: imageSize / 2,
-    marginTop: 12
+    marginTop: 15
   },
   usernameText: {
     fontSize: 24,
@@ -69,9 +70,10 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     position: "absolute",
-    top: 20,
+    top: 40,
     right: 20,
-    marginTop: 5
+    zIndex: 10,
+    marginTop: 10
   },
   logoutText: {
     color: "#ff5b5b",
@@ -80,10 +82,10 @@ const styles = StyleSheet.create({
   aboutText: {
     color: "#999",
     textAlign: "center",
-    marginTop: 30
+    marginTop: 50
   },
   bottomSpace: {
-    height: 100, // Space to ensure content isn't hidden behind the cloud
+    height: 100,
   },
 });
 
@@ -143,6 +145,10 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <TouchableOpacity style={styles.logoutButton} onPress={handleSignout}>
+        <Text style={styles.logoutText}>Logout</Text>
+      </TouchableOpacity>
+
       <Animated.ScrollView
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -150,9 +156,6 @@ export default function Profile() {
         )}
         scrollEventThrottle={16}
       >
-        <TouchableOpacity style={styles.logoutButton} onPress={handleSignout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
         <View style={styles.profileSection}>
           {hasPhoto ? (
             <Image
@@ -202,7 +205,7 @@ export default function Profile() {
         </TouchableOpacity>
 
         <Text style={styles.aboutText}>
-            The developer team of international students aims to help Australian communities facing flood challenges.
+          The developer team of international students aims to help Australian communities facing flood challenges.
         </Text>
         
         <View style={styles.bottomSpace} />
