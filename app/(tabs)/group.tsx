@@ -56,7 +56,7 @@ export default function Group() {
             </View>
             <TouchableOpacity
                 style={styles.viewLocButton}
-                onPress={() => router.push({ pathname: '/', params: { username: item.username } })}
+                onPress={() => router.push({ pathname:'/', params: { initialLocation:item.username } })}
             >
                 <Text style={styles.buttonText}>View Loc</Text>
             </TouchableOpacity>
