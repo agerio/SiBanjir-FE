@@ -32,8 +32,8 @@ interface SpecialWarning {
     latitude: number;
     longitude: number;
   };
-  imageUrl: string;
-  // created_at: string;
+  image_url: string;
+  created_at: string;
 }
 
 interface MapState {
@@ -146,13 +146,14 @@ export default function ShowMap() {
         const specialWarnings = response.data
           .filter((warning: any) => isValidCoordinates(warning.lat, warning.long))
           .map((warning: any) => ({
+            id: warning.id,
             description: warning.name,
             coordinates: {
               latitude: parseFloat(warning.lat),
               longitude: parseFloat(warning.long),
             },
-            imageUrl: warning.image
-            // created_at: warning.created_at,
+            image_url: warning.image,
+            created_at: warning.created_at,
           }));
         setMapState(prevState => ({ ...prevState, specialWarnings }));
       } catch (error) {
@@ -178,13 +179,20 @@ export default function ShowMap() {
     if (!mapState.locationPermission) return;
 
     const calculateDistance = (userLocation: { latitude: number; longitude: number }) => {
-      return mapState.floodwatches.map(floodwatch => ({
-        ...floodwatch,
-        distance: {
-          metres: getDistance(userLocation, floodwatch.coordinates),
-          nearby: getDistance(userLocation, floodwatch.coordinates) <= 100
-        }
-      })).sort((a, b) => a.distance.metres - b.distance.metres)[0];
+      return mapState.floodwatches.map(floodwatch => {
+        const distanceMetres = getDistance(userLocation, floodwatch.coordinates);
+        
+        // console.log('Floodwatch coordinates:', floodwatch.coordinates);
+        // console.log('Distance calculated:', distanceMetres);
+
+        return {
+            ...floodwatch,
+            distance: {
+                metres: distanceMetres,
+                nearby: distanceMetres <= 100
+            }
+        };
+    }).sort((a, b) => a.distance.metres - b.distance.metres)[0];
     };
 
     const subscription = Location.watchPositionAsync(
@@ -197,6 +205,7 @@ export default function ShowMap() {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude
         };
+        console.log(calculateDistance(userLocation));
         const nearbyFloodwatch = calculateDistance(userLocation);
         setMapState(prevState => ({
           ...prevState,
@@ -223,7 +232,7 @@ export default function ShowMap() {
       <Callout>
         {/* Method 1: style*/}
         {/* <Text style={{height: 200,flex: 1,marginTop: -85,width: 330,}}>
-          <Image resizeMode="cover" source={{ uri: warning.imageUrl }} style={{height: 200,width: 330}}></Image>
+          <Image resizeMode="cover" source={{ uri: warning.image_url }} style={{height: 200,width: 330}}></Image>
         </Text> */}
 
         {/* Method 2: svg*/}
@@ -232,15 +241,18 @@ export default function ShowMap() {
             width={"100%"}
             height={"100%"}
             preserveAspectRatio="xMidYMid slice"
-            href={{ uri: warning.imageUrl }}
+            href={{ uri: warning.image_url }}
           />
         </Svg> */}
 
         {/* Method 3: webview*/}
-        <View style={styles.calloutContainer}>
+        <View>
           {/* <Text style={styles.calloutTitle}>Special Warning</Text> */}
-          <Text style={styles.calloutDescription}>{warning.description}</Text>
-          <WebView style={{ height: 0.45*screenWidth , width: 0.6*screenWidth}} source={{ uri: warning.imageUrl }} />
+          <WebView style={{ height: 0.45*screenWidth , width: 0.7*screenWidth}} source={{ uri: warning.image_url }} />
+          <View style={styles.calloutContainer}>
+            <Text style={styles.calloutDescription}>{warning.description}</Text>
+            <Text style={styles.calloutDate}>{warning.created_at}</Text>
+          </View>
         </View>
       </Callout>
     </Marker>
@@ -266,14 +278,14 @@ export default function ShowMap() {
               image={floodWatchImage[floodwatch.class]}
               coordinate={floodwatch.coordinates}
               title={floodwatch.name}
-              description={`${floodwatch.class.toUpperCase()}${floodwatch.tendency ? ` (${floodwatch.tendency})` : ''}`}
+              description={`${floodwatch.class.toUpperCase()}${floodwatch.tendency ? ` (${floodwatch.distance.metres})` : ''}`}
             />
             <Circle
               center={floodwatch.coordinates}
               radius={500}
               strokeWidth={0}
               strokeColor={floodClassColor[floodwatch.class]}
-              fillColor={colorScheme === "dark" ? "rgba(128,0,128,0.5)" : `${floodClassColor[floodwatch.class]}30`}
+              fillColor={`${floodClassColor[floodwatch.class]}30`}
             />
           </React.Fragment>
         ))}
@@ -319,5 +331,9 @@ const styles = StyleSheet.create({
   },
   calloutDescription: {
     fontSize: 14,
+  },
+  calloutDate: {
+    fontSize: 12,
+    fontStyle: 'italic',
   },
 });

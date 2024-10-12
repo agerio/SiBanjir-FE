@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import ShowMap from '../../components/ShowMap';
 
 export default function App() {
+    console.log('Show Map!')
     return (
         <ShowMap />
     );
