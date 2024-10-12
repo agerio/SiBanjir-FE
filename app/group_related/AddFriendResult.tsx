@@ -21,7 +21,7 @@ export default function AddFriendResult() {
     
         try {
             const response = await axios.post(`${API_URL}/user/searchFriend`, {
-                recipient_username: searchQuery  // Changed from 'query' to 'recipient_username'
+                recipient_username: searchQuery
             }, {
                 timeout: 10000 // 10 seconds timeout
             });
@@ -36,11 +36,15 @@ export default function AddFriendResult() {
                 setError('User not found. Please check the username and try again.');
             }
         } catch (error) {
-            console.error('Error fetching user data:', error);
-            console.error('Error details:', error.response?.data || error.message);
+            console.log('Error fetching user data:', error);
+            console.log('Error details:', error.response?.data || error.message);
             
             if (error.response && error.response.status === 400) {
-                setError('Invalid request. Please check the username and try again.');
+                if (error.response.data.non_field_errors && error.response.data.non_field_errors.length > 0) {
+                    setError(error.response.data.non_field_errors[0]);
+                } else {
+                    setError('Invalid request. Please check the username and try again.');
+                }
             } else if (error.code === 'ECONNABORTED' && retryCount < 3) {
                 console.log(`Retrying... Attempt ${retryCount + 1}`);
                 await fetchUserData(searchQuery, retryCount + 1);
@@ -56,7 +60,7 @@ export default function AddFriendResult() {
             setIsLoading(false);
         }
     }, []);
-///
+
     useEffect(() => {
         console.log("Params received:", params);
         const searchQuery = params.searchQuery;
@@ -75,12 +79,16 @@ export default function AddFriendResult() {
             if (response.data.message === "Invitation sent successfully") {
                 router.push('/group_related/AddFriendSuccess');
             } else {
-                console.error('Unexpected response:', response.data);
+                console.log('Unexpected response:', response.data);
                 router.push('/group_related/AddFriendFail');
             }
         } catch (error) {
-            console.error('Error sending invitation:', error.response?.data || error.message);
-            router.push('/group_related/AddFriendFail');
+            console.log('Error sending invitation:', error.response?.data || error.message);
+            if (error.response && error.response.data.non_field_errors && error.response.data.non_field_errors.length > 0) {
+                setError(error.response.data.non_field_errors[0]);
+            } else {
+                router.push('/group_related/AddFriendFail');
+            }
         }
     };
 
@@ -99,7 +107,7 @@ export default function AddFriendResult() {
                         <Text style={styles.warningText}>Note: Showing result for "{userData.username}"</Text>
                     )}
                     <Image 
-                        source={userData.profile_picture ? { uri: userData.profile_picture } : require('../../assets/images/profile-placeholder.png')} 
+                        source={userData.profile_picture ? { uri: userData.profile_picture } : require('../../assets/images/user-icon.png')} 
                         style={styles.profileImage}
                     />
                     <Text style={styles.friendName}>{userData.username}</Text>
@@ -164,5 +172,10 @@ const styles = StyleSheet.create({
     errorText: {
         color: 'red',
         fontSize: 18,
+    },
+    warningText: {
+        color: 'yellow',
+        fontSize: 16,
+        marginBottom: 10,
     },
 });
