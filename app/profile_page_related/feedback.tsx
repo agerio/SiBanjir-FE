@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { SafeAreaView, View, TextInput, Text, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
+import { SafeAreaView, View, TextInput, Text, TouchableOpacity, StyleSheet, Dimensions, Alert } from "react-native";
 import { FontAwesome } from '@expo/vector-icons'; // For the stars
+import { useNavigation } from '@react-navigation/native'; // Import useNavigation
 
 const { width } = Dimensions.get("window");
 
@@ -83,8 +84,32 @@ export default function Feedback() {
     const [rating, setRating] = useState(4); // Default rating is 4
     const [comment, setComment] = useState("");
 
+    const navigation = useNavigation(); // Get the navigation object
+
     const handleRatingPress = (value: number) => {
         setRating(value);
+    };
+
+    const handleSubmit = () => {
+        // Here you can add code to submit the feedback to the server if needed
+
+        // Show the success alert
+        Alert.alert(
+            "Feedback Sent",
+            "Thank you for your feedback!",
+            [
+                {
+                    text: "OK",
+                    onPress: () => navigation.navigate('profile'), // Navigate back to profile page
+                },
+            ],
+            { cancelable: false }
+        );
+    };
+
+    const handleCancel = () => {
+        // Navigate back to profile page
+        navigation.navigate('profile');
     };
 
     return (
@@ -134,10 +159,10 @@ export default function Feedback() {
             </View>
 
             <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.button}>
+                <TouchableOpacity style={styles.button} onPress={handleCancel}>
                     <Text style={styles.buttonText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.submitButton}>
+                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
                     <Text style={styles.submitButtonText}>Submit</Text>
                 </TouchableOpacity>
             </View>
