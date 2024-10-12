@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { StyleSheet, Appearance, View, SafeAreaView, Text, Image, Dimensions } from "react-native";
-import MapView, { Circle, Marker, Callout } from "react-native-maps";
+import React, { useState, useEffect, useRef } from "react";
+import { StyleSheet, Appearance, View, SafeAreaView, Text, Image, Dimensions, Alert, Button } from "react-native";
+import MapView, { Circle, Marker, Callout, Region } from "react-native-maps";
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
-import { getDistance } from "geolib";
 import { API_URL } from "@/context/GlobalContext";
 import axios from 'axios';
 
@@ -13,10 +12,6 @@ interface FloodWatch {
   coordinates: {
     latitude: number;
     longitude: number;
-  };
-  distance: {
-    metres: number;
-    nearby: boolean;
   };
   xingname: string;
   class: string;
@@ -36,15 +31,25 @@ interface SpecialWarning {
   created_at: string;
 }
 
+interface FriendLocation {
+  id: string;
+  last_login: string;
+  image_url: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
 interface MapState {
   locationPermission: boolean;
   floodwatches: FloodWatch[];
   specialWarnings: SpecialWarning[];
+  friendLocation: FriendLocation[];
   userLocation: {
     latitude: number;
     longitude: number;
   };
-  nearbyFloodwatch?: FloodWatch;
 }
 
 const colorScheme = Appearance.getColorScheme();
@@ -66,23 +71,6 @@ const floodWatchImage = {
   "major": require('@/assets/images/bom_floodwatch_major.png')
 };
 
-const NearbyFloodwatch: React.FC<FloodWatch> = ({ name, distance }) => {
-  if (!name) return null;
-
-  return (
-    <SafeAreaView style={styles.nearbyFloodwatchSafeAreaView}>
-      <View style={styles.nearbyFloodwatchView}>
-        <Text style={styles.nearbyFloodwatchText}>{name}</Text>
-        {distance?.nearby && (
-          <Text style={[styles.nearbyFloodwatchText, styles.nearbyFloodwatchTextBold]}>
-            Within 100 Metres!
-          </Text>
-        )}
-      </View>
-    </SafeAreaView>
-  );
-};
-
 const isValidCoordinates = (lat: string, long: string): boolean => {
   const latitude = parseFloat(lat);
   const longitude = parseFloat(long);
@@ -95,11 +83,19 @@ const isValidCoordinates = (lat: string, long: string): boolean => {
   );
 };
 
-export default function ShowMap() {
+interface ShowMapProps {
+  initialLocation?: string | string[];
+}
+
+const ShowMap: React.FC<ShowMapProps> = ({ initialLocation }) => {
+  const mapRef = useRef<MapView | null>(null); // Ref for MapView
+  const markersRef = useRef<Record<string, Marker | null>>({}); // Refs for Markers
+
   const [mapState, setMapState] = useState<MapState>({
     locationPermission: false,
     floodwatches: [],
     specialWarnings: [],
+    friendLocation: [],
     userLocation: {
       latitude: -27.5263381,
       longitude: 153.0954163,
@@ -119,10 +115,6 @@ export default function ShowMap() {
             coordinates: {
               latitude: parseFloat(floodwatch.lat),
               longitude: parseFloat(floodwatch.long)
-            },
-            distance: {
-              metres: 0,
-              nearby: false
             },
             xingname: floodwatch.xingname,
             class: floodwatch.class.toLowerCase(),
@@ -146,7 +138,7 @@ export default function ShowMap() {
         const specialWarnings = response.data
           .filter((warning: any) => isValidCoordinates(warning.lat, warning.long))
           .map((warning: any) => ({
-            id: warning.id,
+            id: warning.id.toString(),
             description: warning.name,
             coordinates: {
               latitude: parseFloat(warning.lat),
@@ -163,6 +155,31 @@ export default function ShowMap() {
     fetchSpecialWarnings();
   }, []);
 
+  // Fetch friend location
+  useEffect(() => {
+    const fetchFriendLocation = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/user/sendLocation`);
+        const friendLocation = response.data
+          .filter((friend_location: any) => isValidCoordinates(friend_location.lat, friend_location.long))
+          .map((friend_location: any) => ({
+            id: friend_location.friend_username,
+            last_login: friend_location.last_login,
+            coordinates: {
+              latitude: parseFloat(friend_location.lat),
+              longitude: parseFloat(friend_location.long),
+            },
+            image_url: friend_location.friend_profile_picture,
+            created_at: friend_location.created_at,
+          }));
+        setMapState(prevState => ({ ...prevState, friendLocation }));
+      } catch (error) {
+        console.error('Error fetching special friend_locations:', error);
+      }
+    };
+    fetchFriendLocation();
+  }, []);
+
   // Handle location permissions
   useEffect(() => {
     const requestLocationPermission = async () => {
@@ -174,26 +191,9 @@ export default function ShowMap() {
     requestLocationPermission();
   }, []);
 
-  // Calculate distances to floodwatches
+  // Handle granted permission
   useEffect(() => {
     if (!mapState.locationPermission) return;
-
-    const calculateDistance = (userLocation: { latitude: number; longitude: number }) => {
-      return mapState.floodwatches.map(floodwatch => {
-        const distanceMetres = getDistance(userLocation, floodwatch.coordinates);
-        
-        // console.log('Floodwatch coordinates:', floodwatch.coordinates);
-        // console.log('Distance calculated:', distanceMetres);
-
-        return {
-            ...floodwatch,
-            distance: {
-                metres: distanceMetres,
-                nearby: distanceMetres <= 100
-            }
-        };
-    }).sort((a, b) => a.distance.metres - b.distance.metres)[0];
-    };
 
     const subscription = Location.watchPositionAsync(
       {
@@ -205,12 +205,9 @@ export default function ShowMap() {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude
         };
-        console.log(calculateDistance(userLocation));
-        const nearbyFloodwatch = calculateDistance(userLocation);
         setMapState(prevState => ({
           ...prevState,
           userLocation,
-          nearbyFloodwatch
         }));
       }
     );
@@ -220,47 +217,127 @@ export default function ShowMap() {
         subscription.remove();
       }
     };
-  }, [mapState.locationPermission, mapState.floodwatches]);
+  }, [mapState.locationPermission]);
 
-  const renderSpecialWarningMarker = (warning: SpecialWarning) => (
-    <Marker
+  // Handle location change
+  const lastFetchRef = useRef(0);
+  const fetchInterval = 5000;
+  useEffect(() => {
+    if (!mapState.locationPermission) return;
+
+    const fetchFloodwatches = async () => {
+      const lat = mapState.userLocation.latitude;
+      const long = mapState.userLocation.longitude;
+      try {
+        await axios.post(`${API_URL}/user/sendLocation`, { lat, long });
+      } catch (error) {
+        console.error('Error sending location:', error);
+      }
+    };
+
+    const now = Date.now();
+    if (now - lastFetchRef.current >= fetchInterval) {
+      fetchFloodwatches();
+      lastFetchRef.current = now;
+    }
+  }, [mapState.userLocation]);
+
+  // Handle initial location
+  useEffect(() => {
+    if (initialLocation) {
+      focusOnMarker(initialLocation);
+    }
+  }, [initialLocation]);
+
+  // Function to focus on a marker by ID
+  const focusOnMarker = (id: string) => {
+    const marker = markersRef.current[id];
+    if (marker) {
+      const markerLocation = 
+        mapState.floodwatches.find(fw => fw.id === id)?.coordinates || 
+        mapState.specialWarnings.find(sw => sw.id === id)?.coordinates ||
+        mapState.friendLocation.find(fl => fl.id === id )?.coordinates;
+
+      if (markerLocation) {
+        const region: Region = {
+          latitude: markerLocation.latitude,
+          longitude: markerLocation.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        };
+
+        mapRef.current?.animateToRegion(region, 500);
+        setTimeout(() => {
+          marker.showCallout();
+        }, 500);
+      }
+    }
+  };
+  
+  // Flood Watch renderer
+  const renderFloodWatchMarker = (floodwatch: FloodWatch) => (
+    <React.Fragment key={floodwatch.id}>
+      <Marker
+        ref={ref => (markersRef.current[floodwatch.id] = ref)}
+        image={floodWatchImage[floodwatch.class]}
+        coordinate={floodwatch.coordinates}
+        title={floodwatch.name}
+        description={`${floodwatch.class.toUpperCase()}${floodwatch.tendency ? ` (${floodwatch.tendency})` : ''}`}
+      />
+      <Circle
+        center={floodwatch.coordinates}
+        radius={500}
+        strokeWidth={0}
+        strokeColor={floodClassColor[floodwatch.class]}
+        fillColor={`${floodClassColor[floodwatch.class]}30`}
+      />
+    </React.Fragment>
+  );
+  
+    // Special Warning renderer
+    const renderSpecialWarningMarker = (warning: SpecialWarning) => (
+      <Marker
+      ref={ref => (markersRef.current[warning.id] = ref)}
       image={require('@/assets/images/special_warning.png')}
       key={warning.id}
       coordinate={warning.coordinates}
       title="Special Warning"
-    >
-      <Callout>
-        {/* Method 1: style*/}
-        {/* <Text style={{height: 200,flex: 1,marginTop: -85,width: 330,}}>
-          <Image resizeMode="cover" source={{ uri: warning.image_url }} style={{height: 200,width: 330}}></Image>
-        </Text> */}
-
-        {/* Method 2: svg*/}
-        {/* <Svg width={240} height={120}>
-          <ImageSvg 
-            width={"100%"}
-            height={"100%"}
-            preserveAspectRatio="xMidYMid slice"
-            href={{ uri: warning.image_url }}
-          />
-        </Svg> */}
-
-        {/* Method 3: webview*/}
-        <View>
-          {/* <Text style={styles.calloutTitle}>Special Warning</Text> */}
-          <WebView style={{ height: 0.45*screenWidth , width: 0.7*screenWidth}} source={{ uri: warning.image_url }} />
-          <View style={styles.calloutContainer}>
-            <Text style={styles.calloutDescription}>{warning.description}</Text>
-            <Text style={styles.calloutDate}>{warning.created_at}</Text>
+      >
+        <Callout>
+          <View>
+            <WebView style={{ height: 0.45*screenWidth , width: 0.7*screenWidth}} source={{ uri: warning.image_url }} />
+            <View style={styles.calloutContainer}>
+              <Text style={styles.calloutDescription}>{warning.description}</Text>
+              <Text style={styles.calloutDate}>{warning.created_at}</Text>
+            </View>
           </View>
-        </View>
-      </Callout>
-    </Marker>
-  );
+        </Callout>
+      </Marker>
+    );
+    
+    // Friend Location renderer
+    const renderFriendLocation = (friendloc: FriendLocation) => (
+      <React.Fragment key={friendloc.id}>
+        <Marker
+          ref={ref => (markersRef.current[friendloc.id] = ref)}
+          coordinate={friendloc.coordinates}
+          title={`${friendloc.id}`}
+          description={`${friendloc.last_login}`}
+        >
+          {/* Custom marker with image */}
+          <View style={styles.friendMarker}>
+            <Image 
+              style={{width:'100%', height:'100%'}}
+              source={friendloc.image_url ? { uri: friendloc.image_url } : require('@/assets/images/default_icon.png')}/>
+          </View>
+        </Marker>
+      </React.Fragment>
+    );
 
   return (
     <>
       <MapView
+        ref={mapRef}
         camera={{
           center: mapState.userLocation,
           pitch: 0,
@@ -272,48 +349,22 @@ export default function ShowMap() {
         style={styles.container}
       >
         {/* Render Floodwatch Markers */}
-        {mapState.floodwatches.map(floodwatch => (
-          <React.Fragment key={floodwatch.id}>
-            <Marker
-              image={floodWatchImage[floodwatch.class]}
-              coordinate={floodwatch.coordinates}
-              title={floodwatch.name}
-              description={`${floodwatch.class.toUpperCase()}${floodwatch.tendency ? ` (${floodwatch.distance.metres})` : ''}`}
-            />
-            <Circle
-              center={floodwatch.coordinates}
-              radius={500}
-              strokeWidth={0}
-              strokeColor={floodClassColor[floodwatch.class]}
-              fillColor={`${floodClassColor[floodwatch.class]}30`}
-            />
-          </React.Fragment>
-        ))}
+        {mapState.floodwatches.map(renderFloodWatchMarker)}
 
         {/* Render SpecialWarning Markers */}
         {mapState.specialWarnings.map(renderSpecialWarningMarker)}
+
+        {/* Render FriendLocation Markers */}
+        {mapState.friendLocation.map(renderFriendLocation)}
       </MapView>
-      {mapState.nearbyFloodwatch && <NearbyFloodwatch {...mapState.nearbyFloodwatch} />}
+      {/* <Button title="Focus on a Flood Watch" onPress={() => focusOnMarker('bangsat')} /> */}
     </>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  nearbyFloodwatchSafeAreaView: {
-    backgroundColor: "black",
-  },
-  nearbyFloodwatchView: {
-    padding: 20,
-  },
-  nearbyFloodwatchText: {
-    color: "white",
-    lineHeight: 25
-  },
-  nearbyFloodwatchTextBold: {
-    fontWeight: "bold"
   },
   calloutContainer: {
     width: 0.7 * screenWidth,
@@ -336,4 +387,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: 'italic',
   },
+  friendMarker: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'blue',
+  },
 });
+
+export default ShowMap;

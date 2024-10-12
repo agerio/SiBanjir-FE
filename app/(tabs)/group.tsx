@@ -34,7 +34,7 @@ export default function Group() {
 
             <TouchableOpacity
                 style={styles.viewLocButton}
-                onPress={() => router.push('../(tabs)/index')} // Navigate to the location page
+                onPress={() => router.push({pathname:'/', params: {initialLocation:"bangsat"}})} // Navigate to the location page
             >
                 <Text style={styles.buttonText}>View Loc</Text>
             </TouchableOpacity>
