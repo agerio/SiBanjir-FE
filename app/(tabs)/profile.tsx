@@ -58,12 +58,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: "#2b2b4b",
     borderRadius: 10,
-    width: "100%",
-    marginBottom: 15
+    width: "90%",
+    marginBottom: 15,
+    marginLeft: 20,
+    marginRight: 20
   },
   menuItemText: {
     color: "#fff",
-    fontSize: 18
+    fontSize: 18,
   },
   logoutButton: {
     position: "absolute",
@@ -142,7 +144,6 @@ export default function Profile() {
   return (
     <SafeAreaView style={styles.container}>
       <Animated.ScrollView
-        contentContainerStyle={styles.scrollContent}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false }
@@ -201,7 +202,7 @@ export default function Profile() {
         </TouchableOpacity>
 
         <Text style={styles.aboutText}>
-          The developer team as international students want to help Australia's community related to floods
+            The developer team of international students aims to help Australian communities facing flood challenges.
         </Text>
         
         <View style={styles.bottomSpace} />
