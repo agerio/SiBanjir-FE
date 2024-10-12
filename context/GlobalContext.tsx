@@ -11,8 +11,8 @@ interface AuthProps {
 }
 
 const TOKEN_KEY = 'auth-token'
-export const API_URL = 'https://si-banjir-be.vercel.app/api';
-// export const API_URL = 'http://10.0.2.2:8000/api';
+// export const API_URL = 'https://si-banjir-be.vercel.app/api';
+export const API_URL = 'http://10.0.2.2:8000/api';
 const AuthContext = createContext<AuthProps>({});
 
 export const useAuth = () => {
