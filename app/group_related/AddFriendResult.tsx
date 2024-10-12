@@ -1,38 +1,115 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { useRouter } from 'expo-router';  // Import useRouter from expo-router
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import axios from 'axios';
+import { API_URL } from "@/context/GlobalContext";
 
 export default function AddFriendResult() {
-    const router = useRouter();  // Use useRouter for navigation
-    const searchQuery = "John Doe"; // Replace this with dynamic query from your state or props
+    const [userData, setUserData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const router = useRouter();
+    const params = useLocalSearchParams();
 
-    const handleAddFriend = () => {
-        // Simulate adding a friend (could be a network request)
-        const isSuccess = Math.random() > 0.5; // Randomly simulate success or failure
+    const fetchUserData = useCallback(async (searchQuery, retryCount = 0) => {
+        if (!searchQuery) {
+            console.log("No search query provided");
+            setError('Please provide a username to search.');
+            setIsLoading(false);
+            return;
+        }
+    
+        try {
+            const response = await axios.post(`${API_URL}/user/searchFriend`, {
+                recipient_username: searchQuery  // Changed from 'query' to 'recipient_username'
+            }, {
+                timeout: 10000 // 10 seconds timeout
+            });
+            console.log("API response:", response.data);
+            
+            if (response.data && response.data.username) {
+                setUserData(response.data);
+                if (response.data.username !== searchQuery) {
+                    console.log(`Note: Searched for "${searchQuery}" but received data for "${response.data.username}"`);
+                }
+            } else {
+                setError('User not found. Please check the username and try again.');
+            }
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+            console.error('Error details:', error.response?.data || error.message);
+            
+            if (error.response && error.response.status === 400) {
+                setError('Invalid request. Please check the username and try again.');
+            } else if (error.code === 'ECONNABORTED' && retryCount < 3) {
+                console.log(`Retrying... Attempt ${retryCount + 1}`);
+                await fetchUserData(searchQuery, retryCount + 1);
+                return;
+            } else if (error.response) {
+                setError(`Server error: ${error.response.status}. Please try again later.`);
+            } else if (error.request) {
+                setError('Network error. Please check your internet connection and try again.');
+            } else {
+                setError('An unexpected error occurred. Please try again.');
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+///
+    useEffect(() => {
+        console.log("Params received:", params);
+        const searchQuery = params.searchQuery;
+        console.log("Search Query:", searchQuery);
 
-        if (isSuccess) {
-            router.push('../group_related/AddFriendSuccess'); // Navigate to success page
-        } else {
-            router.push('../group_related/AddFriendFail'); // Navigate to fail page
+        setIsLoading(true);
+        setError(null);
+        fetchUserData(searchQuery);
+    }, [params.searchQuery, fetchUserData]);
+
+    const handleAddFriend = async () => {
+        try {
+            const response = await axios.post(`${API_URL}/user/sendInvitation`, { 
+                recipient_username: userData.username
+            });
+            if (response.data.message === "Invitation sent successfully") {
+                router.push('/group_related/AddFriendSuccess');
+            } else {
+                console.error('Unexpected response:', response.data);
+                router.push('/group_related/AddFriendFail');
+            }
+        } catch (error) {
+            console.error('Error sending invitation:', error.response?.data || error.message);
+            router.push('/group_related/AddFriendFail');
         }
     };
 
     return (
         <SafeAreaView style={styles.container}>
             <Text style={styles.header}>Adding New Friend</Text>
+            <Text style={styles.queryText}>Searched for: {params.searchQuery || 'N/A'}</Text>
 
-            <View style={styles.profileContainer}>
-                {/* Replace with the user's profile image, here it is a placeholder */}
-                <Image 
-                    source={require('../../assets/images/profile-placeholder.png')} 
-                    style={styles.profileImage}
-                />
-                <Text style={styles.friendName}>{searchQuery}</Text>
-            </View>
-
-            <TouchableOpacity style={styles.addButton} onPress={handleAddFriend}>
-                <Text style={styles.buttonText}>Add</Text>
-            </TouchableOpacity>
+            {isLoading ? (
+                <Text style={styles.loadingText}>Loading...</Text>
+            ) : error ? (
+                <Text style={styles.errorText}>{error}</Text>
+            ) : userData ? (
+                <View style={styles.profileContainer}>
+                    {userData.username !== params.searchQuery && (
+                        <Text style={styles.warningText}>Note: Showing result for "{userData.username}"</Text>
+                    )}
+                    <Image 
+                        source={userData.profile_picture ? { uri: userData.profile_picture } : require('../../assets/images/profile-placeholder.png')} 
+                        style={styles.profileImage}
+                    />
+                    <Text style={styles.friendName}>{userData.username}</Text>
+                    <TouchableOpacity style={styles.addButton} onPress={handleAddFriend}>
+                        <Text style={styles.buttonText}>Add Friend</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <Text style={styles.errorText}>No user data available</Text>
+            )}
         </SafeAreaView>
     );
 }
@@ -48,7 +125,12 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
         color: '#fff',
-        marginBottom: 30,
+        marginBottom: 10,
+    },
+    queryText: {
+        fontSize: 16,
+        color: '#fff',
+        marginBottom: 20,
     },
     profileContainer: {
         alignItems: 'center',
@@ -63,6 +145,7 @@ const styles = StyleSheet.create({
     friendName: {
         fontSize: 20,
         color: '#fff',
+        marginBottom: 20,
     },
     addButton: {
         backgroundColor: '#444',
@@ -73,5 +156,13 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#fff',
         fontSize: 16,
+    },
+    loadingText: {
+        color: '#fff',
+        fontSize: 18,
+    },
+    errorText: {
+        color: 'red',
+        fontSize: 18,
     },
 });
