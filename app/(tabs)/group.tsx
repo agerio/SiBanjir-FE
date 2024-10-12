@@ -24,7 +24,17 @@ export default function Group() {
                         'Authorization': `Token ${authState?.token}`,
                     },
                 });
-                setFriends(response.data);
+
+                // Remove duplicates based on username
+                const uniqueFriendsMap = new Map();
+                response.data.forEach((friend: Friend) => {
+                    if (!uniqueFriendsMap.has(friend.username)) {
+                        uniqueFriendsMap.set(friend.username, friend);
+                    }
+                });
+                const uniqueFriends = Array.from(uniqueFriendsMap.values());
+
+                setFriends(uniqueFriends);
             } catch (error) {
                 console.error('Error fetching friends:', error);
             }
@@ -45,11 +55,7 @@ export default function Group() {
             </View>
             <TouchableOpacity
                 style={styles.viewLocButton}
-                // onPress={() => router.push({
-                //     pathname: '../(tabs)/index',
-                //     params: { friendId: item.id },
-                // })}
-                onPress={() => router.push({ pathname:"/", params: { username: item.username }})}
+                onPress={() => router.push({ pathname: '/', params: { username: item.username } })}
             >
                 <Text style={styles.buttonText}>View Loc</Text>
             </TouchableOpacity>
@@ -61,7 +67,7 @@ export default function Group() {
             <Text style={styles.header}>Friend & Family</Text>
             <FlatList
                 data={friends}
-                keyExtractor={item => item.id}
+                keyExtractor={(item) => item.id}
                 renderItem={renderItem}
             />
             <TouchableOpacity
