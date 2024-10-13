@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { StyleSheet, Appearance, View, SafeAreaView, Text, Image, Dimensions, Alert, Button, TouchableOpacity  } from "react-native";
+import { StyleSheet, Appearance, View, Text, Image, Dimensions, ActivityIndicator, TouchableOpacity  } from "react-native";
 import MapView, { Circle, Marker, Callout, Region } from "react-native-maps";
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
@@ -90,6 +90,7 @@ interface ShowMapProps {
 }
 
 const ShowMap: React.FC<ShowMapProps> = ({ initialLocation }) => {
+  const [loading, setLoading] = useState(false);
   const mapRef = useRef<MapView | null>(null); // Ref for MapView
   const markersRef = useRef<Record<string, Marker | null>>({}); // Refs for Markers
 
@@ -105,10 +106,17 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation }) => {
   });
 
   const refreshData = async () => {
-    await fetchAllowLocationSharing();
-    await fetchFloodwatches();
-    await fetchSpecialWarnings();
-    await fetchFriendLocation();
+    setLoading(true);
+    try {
+      await fetchAllowLocationSharing();
+      await fetchFloodwatches();
+      await fetchSpecialWarnings();
+      await fetchFriendLocation();
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setLoading(false);
+    }
   };
   
   const requestLocationPermission = async () => {
@@ -194,11 +202,25 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation }) => {
   };
   
   useEffect(() => {
-    requestLocationPermission();
-    fetchAllowLocationSharing();
-    fetchFloodwatches();
-    fetchSpecialWarnings();
-    fetchFriendLocation();
+    const fetchData = async () => {
+      setLoading(true);
+  
+      try {
+        await Promise.all([
+          requestLocationPermission(),
+          fetchAllowLocationSharing(),
+          fetchFloodwatches(),
+          fetchSpecialWarnings(),
+          fetchFriendLocation()
+        ]);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchData();
   }, []);
 
 
@@ -374,11 +396,19 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation }) => {
         {/* Render FriendLocation Markers */}
         {mapState.friendLocation.map(renderFriendLocation)}
       </MapView>
-      <TouchableOpacity style={styles.refreshButton} onPress={refreshData}>
-        <Ionicons name="refresh" size={24} color="gray" />
-        <Text style={{color:'gray', fontWeight:'bold'}}>Refresh</Text>
+      <TouchableOpacity style={styles.refreshButton} onPress={refreshData} disabled={loading}>
+        {loading ? (
+          <>
+            <ActivityIndicator size="small" color="gray" style={{ marginRight: 8 }} />
+            <Text style={{color:'gray', fontWeight:'bold'}}>Loading</Text>
+          </>
+        ) : (
+          <>
+            <Ionicons name="refresh" size={24} color="gray" style={{ marginRight: 8 }} />
+            <Text style={{color:'gray', fontWeight:'bold'}}>Refresh</Text>
+          </>
+        )}
       </TouchableOpacity>
-      {/* <Button title="Focus on a Flood Watch" onPress={() => focusOnMarker('14')} /> */}
     </>
   );
 };
