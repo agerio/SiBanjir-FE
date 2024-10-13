@@ -185,6 +185,13 @@ export default function Profile() {
 
         <TouchableOpacity
           style={styles.menuItem}
+          onPress={() => router.push('../profile_page_related/privacy_setting')}
+        >
+          <Text style={styles.menuItemText}>Privacy Setting</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={() => router.push('../profile_page_related/contactUs')}
         >
           <Text style={styles.menuItemText}>Contact Us</Text>

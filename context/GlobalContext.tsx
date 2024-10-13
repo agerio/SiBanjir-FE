@@ -11,6 +11,7 @@ interface AuthProps {
 }
 
 const TOKEN_KEY = 'auth-token'
+export const ALLOW_LOCATION_SHARING = 'allow-location-sharing'
 export const API_URL = 'https://si-banjir-be.vercel.app/api';
 // export const API_URL = 'http://10.0.2.2:8000/api';
 const AuthContext = createContext<AuthProps>({});
