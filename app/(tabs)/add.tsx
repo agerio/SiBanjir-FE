@@ -57,9 +57,8 @@ const AddFloodWarning: FC = () => {
     }
 
     async function handleCameraPress() {
-        setModalVisible(false);
         
-        if (Platform.OS === 'ios') {
+        if (Platform.OS ==='ios'){
             const { status } = await ImagePicker.requestCameraPermissionsAsync();
             if (status !== 'granted') {
                 Alert.alert(
@@ -72,17 +71,31 @@ const AddFloodWarning: FC = () => {
                 );
                 return;
             }
+            let result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [4, 3],
+                quality: 1,
+            });
+    
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                setPhotoState(result.assets[0]);
+                setModalVisible(false);
+            }
+
         }
-
-        let result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [4, 3],
-            quality: 1,
-        });
-
-        if (!result.canceled && result.assets && result.assets.length > 0) {
-            setPhotoState(result.assets[0]);
+        else {
+            setModalVisible(false);
+            let result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [4, 3],
+                quality: 1,
+            });
+    
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                setPhotoState(result.assets[0]);
+            }
         }
     }
 
