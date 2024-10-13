@@ -6,88 +6,25 @@ import axios from 'axios';
 import { API_URL, useAuth } from "@/context/GlobalContext";
 import { useFocusEffect } from '@react-navigation/native';
 import Cloud from '../../components/Cloud';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get("window");
 const imageSize = height / 6;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#1e1e30"
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 120,
-    paddingTop: 60, // Added to account for the logout button
-  },
-  profileSection: {
-    alignItems: "center",
-    marginBottom: 30
-  },
-  photoFullView: {
-    marginBottom: 20
-  },
-  photoEmptyView: {
-    borderWidth: 3,
-    borderRadius: imageSize / 2,
-    borderColor: "#999",
-    borderStyle: "dashed",
-    width: imageSize,
-    height: imageSize,
-    marginBottom: 20,
-    justifyContent: "center",
-    alignItems: "center"
-  },
-  photoFullImage: {
-    width: imageSize,
-    height: imageSize,
-    borderRadius: imageSize / 2,
-    marginTop: 15
-  },
-  usernameText: {
-    fontSize: 24,
-    color: "#fff",
-    fontWeight: "bold",
-    marginBottom: 10,
-    marginTop: 12
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    backgroundColor: "#2b2b4b",
-    borderRadius: 10,
-    width: "90%",
-    marginBottom: 15,
-    marginLeft: 20,
-    marginRight: 20
-  },
-  menuItemText: {
-    color: "#fff",
-    fontSize: 18,
-  },
-  logoutButton: {
-    position: "absolute",
-    top: 40,
-    right: 20,
-    zIndex: 10,
-    marginTop: 10
-  },
-  logoutText: {
-    color: "#ff5b5b",
-    fontSize: 16
-  },
-  aboutText: {
-    color: "#999",
-    textAlign: "center",
-    marginTop: 50
-  },
-  bottomSpace: {
-    height: 100,
-  },
-});
+
+interface MenuItemProps {
+  icon: string;
+  title: string;
+  onPress: () => void;
+}
+
+const MenuItem: React.FC<MenuItemProps> = ({ icon, title, onPress }) => (
+  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+    <Ionicons name={icon} size={24} color="white" style={{ marginRight: 10 }} />
+    <Text style={styles.menuItemText}>{title}</Text>
+    <Ionicons name="chevron-forward" size={24} color="white" style={{ marginLeft: 'auto' }} />
+  </TouchableOpacity>
+);
 
 export default function Profile() {
   const [photoState, setPhotoState] = useState<{ uri?: string }>({});
@@ -103,15 +40,10 @@ export default function Profile() {
           const response = await axios.get(`${API_URL}/user/me`, {
             headers: {
               'Authorization': `Token ${authState?.token}`,
-            }
+            },
           });
           setUsername(response.data.username || "");
-
-          if (response.data.profile_picture) {
-            setPhotoState({ uri: response.data.profile_picture });
-          } else {
-            setPhotoState({});
-          }
+          setPhotoState(response.data.profile_picture ? { uri: response.data.profile_picture } : {});
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
@@ -120,19 +52,6 @@ export default function Profile() {
       fetchUserData();
     }, [authState])
   );
-
-  async function handleChangePress() {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setPhotoState(result.assets[0]);
-    }
-  }
 
   const handleSignout = async () => {
     if (onSignout) {
@@ -146,7 +65,7 @@ export default function Profile() {
   return (
     <SafeAreaView style={styles.container}>
       <TouchableOpacity style={styles.logoutButton} onPress={handleSignout}>
-        <Text style={styles.logoutText}>Logout</Text>
+        <Text style={styles.logoutText}>Sign Out</Text>
       </TouchableOpacity>
 
       <Animated.ScrollView
@@ -164,57 +83,26 @@ export default function Profile() {
               source={{ uri: photoState.uri }}
             />
           ) : (
-            <View style={styles.photoEmptyView}></View>
+            <Image
+              style={styles.photoFullImage}
+              resizeMode="cover"
+              source={require('@/assets/images/default_icon.png')}
+            />
           )}
           <Text style={styles.usernameText}>{username}</Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('../profile_page_related/update_profile')}
-        >
-          <Text style={styles.menuItemText}>Profile Setting</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('../profile_page_related/notification_setting')}
-        >
-          <Text style={styles.menuItemText}>Notification</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('../profile_page_related/privacy_setting')}
-        >
-          <Text style={styles.menuItemText}>Privacy Setting</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('../profile_page_related/contactUs')}
-        >
-          <Text style={styles.menuItemText}>Contact Us</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('../profile_page_related/faq')}
-        >
-          <Text style={styles.menuItemText}>FAQ</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('../profile_page_related/feedback')}
-        >
-          <Text style={styles.menuItemText}>Send Us Feedback</Text>
-        </TouchableOpacity>
+        <MenuItem icon="person" title="Profile Setting" onPress={() => router.push('../profile_page_related/update_profile')} />
+        <MenuItem icon="notifications" title="Notification" onPress={() => router.push('../profile_page_related/notification_setting')} />
+        <MenuItem icon="lock-closed" title="Privacy Setting" onPress={() => router.push('../profile_page_related/privacy_setting')} />
+        <MenuItem icon="call" title="Contact Us" onPress={() => router.push('../profile_page_related/contactUs')} />
+        <MenuItem icon="chatbubbles" title="FAQ" onPress={() => router.push('../profile_page_related/faq')} />
+        <MenuItem icon="mail-open" title="Send Us Feedback" onPress={() => router.push('../profile_page_related/feedback')} />
 
         <Text style={styles.aboutText}>
-          The developer team of international students aims to help Australian communities facing flood challenges.
+          Our developer team consists of international students that aims to help Australian communities face flood challenges!
         </Text>
-        
+
         <View style={styles.bottomSpace} />
       </Animated.ScrollView>
       <Cloud scrollY={scrollY} orientation="left" />
@@ -222,3 +110,66 @@ export default function Profile() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#1e1e30",
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 120,
+    paddingTop: 60,
+  },
+  profileSection: {
+    alignItems: "center",
+    marginBottom: 30,
+  },
+  photoFullImage: {
+    width: imageSize,
+    height: imageSize,
+    borderRadius: imageSize / 2,
+    marginTop: 15,
+  },
+  usernameText: {
+    fontSize: 24,
+    color: "#fff",
+    fontWeight: "bold",
+    marginBottom: 10,
+    marginTop: 12,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    backgroundColor: "#2b2b4b",
+    borderRadius: 10,
+    width: "90%",
+    marginBottom: 15,
+    marginHorizontal: 20,
+  },
+  menuItemText: {
+    color: "#fff",
+    fontSize: 18,
+  },
+  logoutButton: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    zIndex: 10,
+  },
+  logoutText: {
+    color: "#ff5b5b",
+    fontSize: 16,
+  },
+  aboutText: {
+    color: "#999",
+    textAlign: "center",
+    marginTop: 50,
+  },
+  bottomSpace: {
+    height: 100,
+  },
+});
