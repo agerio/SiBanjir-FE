@@ -1,65 +1,48 @@
-import React, { useRef, useState } from "react";
-import { SafeAreaView, View, Text, StyleSheet, Dimensions, Animated, Switch } from "react-native";
-import { FontAwesome } from '@expo/vector-icons';
-import Cloud from '../../components/Cloud'; // Import the Cloud component
+import React, { useRef, useState, useEffect } from "react";
+import { Alert, SafeAreaView, View, Text, StyleSheet, Dimensions, Animated, Switch, ActivityIndicator } from "react-native";
+import { API_URL } from "@/context/GlobalContext";
+import Cloud from '../../components/Cloud';
+import axios from 'axios';
 
 const { width, height } = Dimensions.get("window");
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#1e1e30"
-    },
-    scrollContent: {
-        padding: 20,
-        paddingBottom: 120, // Increased to accommodate the cloud pattern
-    },
-    header: {
-        fontSize: 24,
-        fontWeight: "bold",
-        color: "#fff",
-        textAlign: "center",
-        marginBottom: 40
-    },
-    settingItemContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        backgroundColor: "#2b2b4b",
-        borderRadius: 10,
-        padding: 15,
-        marginBottom: 20,
-        flexWrap: "wrap", // Allow wrapping if needed
-    },
-    settingText: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: "#fff",
-        flex: 1,
-    },
-    settingDescription: {
-        fontSize: 12,
-        color: "#999",
-    },
-    bottomPattern: {
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: height / 6,
-        backgroundColor: "#1e1e30",
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-    },
-    bottomSpace: {
-        height: 100, // Space to ensure content isn't hidden behind the cloud
-    },
-});
-
 export default function PrivacySetting() {
     const [isEnabled, setIsEnabled] = useState(false);
-    const toggleSwitch = () => setIsEnabled(previousState => !previousState);
+    const [loading, setLoading] = useState(false);
     const scrollY = useRef(new Animated.Value(0)).current;
+
+    const fetchPrivacySetting = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.get(`${API_URL}/user/switchLocation`);
+            setIsEnabled(response.data.allow_location);
+        } catch (error) {
+            console.error("Error fetching setting:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const toggleSwitch = async () => {
+        if (loading) return;
+
+        setLoading(true);
+        const newValue = !isEnabled;
+        setIsEnabled(newValue);
+
+        try {
+            await axios.post(`${API_URL}/user/switchLocation`, { allow_location: newValue });
+        } catch (error) {
+            console.error("Error updating privacy setting:", error);
+            Alert.alert('Switch failed. Please try again...');
+            setIsEnabled(!newValue);
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchPrivacySetting();
+    }, []);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -83,11 +66,15 @@ export default function PrivacySetting() {
                     <Switch
                         value={isEnabled}
                         onValueChange={toggleSwitch}
-                        style={{ marginLeft: 10 }} // Add some margin for spacing
+                        style={{ marginLeft: 10 }}
+                        disabled={loading}
                     />
+                    {loading && (
+                        <View style={styles.loadingOverlay}>
+                            <ActivityIndicator size={24} color="#fff" />
+                        </View>
+                    )}
                 </View>
-
-
 
                 <View style={styles.bottomSpace} />
             </Animated.ScrollView>
@@ -99,3 +86,65 @@ export default function PrivacySetting() {
         </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: "#1e1e30"
+    },
+    scrollContent: {
+        padding: 20,
+        paddingBottom: 120,
+    },
+    header: {
+        fontSize: 24,
+        fontWeight: "bold",
+        color: "#fff",
+        textAlign: "center",
+        marginBottom: 40
+    },
+    settingItemContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: "#2b2b4b",
+        borderRadius: 10,
+        padding: 15,
+        marginBottom: 20,
+        position: 'relative',
+    },
+    settingText: {
+        fontSize: 18,
+        fontWeight: "bold",
+        color: "#fff",
+        flex: 1,
+    },
+    settingDescription: {
+        fontSize: 12,
+        color: "#999",
+    },
+    loadingOverlay: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(0, 0, 0, 0.5)", // Optional: dark overlay
+        borderRadius: 10,
+    },
+    bottomPattern: {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: height / 6,
+        backgroundColor: "#1e1e30",
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+    },
+    bottomSpace: {
+        height: 100,
+    },
+});
