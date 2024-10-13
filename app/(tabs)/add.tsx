@@ -1,8 +1,7 @@
 import React, { FC, useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Modal, ScrollView, Animated, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Modal, Animated, Dimensions } from 'react-native';
 import { useAuth } from '@/context/GlobalContext';
 import * as ImagePicker from 'expo-image-picker';
-import * as Camera from 'expo-camera';
 import * as Location from 'expo-location';
 import { API_URL } from "@/context/GlobalContext";
 import Cloud from '../../components/Cloud'; // Import the Cloud component
@@ -12,7 +11,7 @@ const { width, height } = Dimensions.get("window");
 const AddFloodWarning: FC = () => {
     const [description, setDescription] = useState('');
     const [photoState, setPhotoState] = useState<{ uri?: string }>({});
-    const [permissionStatus, requestPermission] = Camera.useCameraPermissions();
+    const [permissionStatus, requestPermission] = ImagePicker.useCameraPermissions(); // Changed to ImagePicker
     const [modalVisible, setModalVisible] = useState(false);
     const { authState } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -53,7 +52,10 @@ const AddFloodWarning: FC = () => {
         setModalVisible(false);
         if (!permissionStatus || !permissionStatus.granted) {
             const { granted } = await requestPermission();
-            if (!granted) return;
+            if (!granted) {
+                Alert.alert('Permission Denied', 'Permission to access camera was denied.');
+                return;
+            }
         }
 
         let result = await ImagePicker.launchCameraAsync({
@@ -91,7 +93,7 @@ const AddFloodWarning: FC = () => {
 
             let formData = new FormData();
             formData.append('name', description);
-            formData.append('image', {uri:photoState.uri, type:'image/jpeg', name:'upload.jpeg'});
+            formData.append('image', { uri: photoState.uri, type: 'image/jpeg', name: 'upload.jpeg' });
             formData.append('lat', location.lat.toString());
             formData.append('long', location.long.toString());
 
@@ -197,6 +199,7 @@ const AddFloodWarning: FC = () => {
 };
 
 const styles = StyleSheet.create({
+    // ... (your existing styles)
     container: {
         flex: 1,
         backgroundColor: '#1D1D2E',
