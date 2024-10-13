@@ -57,7 +57,6 @@ const AddFloodWarning: FC = () => {
     }
 
     async function handleCameraPress() {
-        
         if (Platform.OS ==='ios'){
             const { status } = await ImagePicker.requestCameraPermissionsAsync();
             if (status !== 'granted') {
