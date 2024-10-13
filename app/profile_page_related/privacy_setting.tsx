@@ -1,8 +1,9 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Alert, SafeAreaView, View, Text, StyleSheet, Dimensions, Animated, Switch, ActivityIndicator } from "react-native";
-import { API_URL } from "@/context/GlobalContext";
+import { API_URL, ALLOW_LOCATION_SHARING } from "@/context/GlobalContext";
 import Cloud from '../../components/Cloud';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get("window");
 
@@ -16,6 +17,7 @@ export default function PrivacySetting() {
         try {
             const response = await axios.get(`${API_URL}/user/switchLocation`);
             setIsEnabled(response.data.allow_location);
+            await AsyncStorage.setItem(ALLOW_LOCATION_SHARING, JSON.stringify(response.data.allow_location));
         } catch (error) {
             console.error("Error fetching setting:", error);
         } finally {
@@ -29,9 +31,10 @@ export default function PrivacySetting() {
         setLoading(true);
         const newValue = !isEnabled;
         setIsEnabled(newValue);
-
+        
         try {
-            await axios.post(`${API_URL}/user/switchLocation`, { allow_location: newValue });
+            const response = await axios.post(`${API_URL}/user/switchLocation`, { allow_location: newValue });
+            await AsyncStorage.setItem(ALLOW_LOCATION_SHARING, JSON.stringify(response.data.allow_location));
         } catch (error) {
             console.error("Error updating privacy setting:", error);
             Alert.alert('Switch failed. Please try again...');

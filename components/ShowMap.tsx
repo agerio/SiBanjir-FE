@@ -3,9 +3,10 @@ import { StyleSheet, Appearance, View, SafeAreaView, Text, Image, Dimensions, Al
 import MapView, { Circle, Marker, Callout, Region } from "react-native-maps";
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
-import { API_URL } from "@/context/GlobalContext";
+import { API_URL, ALLOW_LOCATION_SHARING } from "@/context/GlobalContext";
 import axios from 'axios';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface FloodWatch {
   id: string;
@@ -104,6 +105,7 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation }) => {
   });
 
   const refreshData = async () => {
+    await fetchAllowLocationSharing();
     await fetchFloodwatches();
     await fetchSpecialWarnings();
     await fetchFriendLocation();
@@ -115,6 +117,15 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation }) => {
       setMapState(prevState => ({ ...prevState, locationPermission: true }));
     }
   };
+
+  const fetchAllowLocationSharing = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/user/switchLocation`);
+      await AsyncStorage.setItem(ALLOW_LOCATION_SHARING, JSON.stringify(response.data.allow_location));
+    } catch (error) {
+      console.error('Error fetching allow location sharing:', error);
+    }
+  }
 
   const fetchFloodwatches = async () => {
     try {
@@ -167,13 +178,13 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation }) => {
       const friendLocation = response.data
         .filter((friend_location: any) => isValidCoordinates(friend_location.lat, friend_location.long))
         .map((friend_location: any) => ({
-          id: friend_location.friend_username,
+          id: friend_location.username,
           last_login: friend_location.last_login,
           coordinates: {
             latitude: parseFloat(friend_location.lat),
             longitude: parseFloat(friend_location.long),
           },
-          image_url: friend_location.friend_profile_picture,
+          image_url: friend_location.profile_picture,
           created_at: friend_location.created_at,
         }));
       setMapState(prevState => ({ ...prevState, friendLocation }));
@@ -184,6 +195,7 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation }) => {
   
   useEffect(() => {
     requestLocationPermission();
+    fetchAllowLocationSharing();
     fetchFloodwatches();
     fetchSpecialWarnings();
     fetchFriendLocation();
@@ -223,8 +235,13 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation }) => {
   const fetchInterval = 5000;
   useEffect(() => {
     if (!mapState.locationPermission) return;
-
-    const fetchFloodwatches = async () => {
+    
+    const sendUserLocation = async () => {
+      const isAllowed = await AsyncStorage.getItem(ALLOW_LOCATION_SHARING);
+      const parsedIsAllowed = isAllowed !== null ? JSON.parse(isAllowed) : true
+      if (!parsedIsAllowed) {
+        return
+      }
       const lat = mapState.userLocation.latitude;
       const long = mapState.userLocation.longitude;
       try {
@@ -236,7 +253,7 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation }) => {
 
     const now = Date.now();
     if (now - lastFetchRef.current >= fetchInterval) {
-      fetchFloodwatches();
+      sendUserLocation();
       lastFetchRef.current = now;
     }
   }, [mapState.userLocation]);
