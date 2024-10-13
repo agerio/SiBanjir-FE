@@ -1,17 +1,20 @@
 import React, { FC, useState } from 'react';
 import { router } from "expo-router";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '@/context/GlobalContext';
 
 const Signin: FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const { onSignin, authState } = useAuth();
+  const [loading, setLoading] = useState(false); // Loading state
+  const { onSignin } = useAuth();
   const navigation = useNavigation();
 
   const handleSignin = async () => {
+    setLoading(true); // Set loading to true when the sign-in process starts
     const response = await onSignin!(username, password);
+    setLoading(false); // Set loading to false when the sign-in process ends
     if (response && response.error) {
       alert(response.msg);
     } else {
@@ -43,8 +46,16 @@ const Signin: FC = () => {
         value={password}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleSignin}>
-        <Text style={styles.buttonText}>Sign in</Text>
+      <TouchableOpacity
+        style={[styles.button, loading && styles.buttonDisabled]} // Disable button when loading
+        onPress={handleSignin}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color="#fff" /> // Show spinner during loading
+        ) : (
+          <Text style={styles.buttonText}>Sign in</Text>
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -110,6 +121,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  buttonDisabled: {
+    backgroundColor: '#999', // Style for the button when it's disabled
   },
   buttonText: {
     color: '#fff',
