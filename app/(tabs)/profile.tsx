@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from "react";
-import { SafeAreaView, View, Image, Text, StyleSheet, TouchableOpacity, Dimensions, Animated } from "react-native";
+import { SafeAreaView, View, Image, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, Alert } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
@@ -10,7 +10,6 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get("window");
 const imageSize = height / 6;
-
 
 interface MenuItemProps {
   icon: string;
@@ -54,18 +53,34 @@ export default function Profile() {
   );
 
   const handleSignout = async () => {
-    if (onSignout) {
-      await onSignout();
-    }
-    router.replace("/(auth)/signin");
+    Alert.alert(
+      "Confirm Sign out",
+      "Are you sure you want to sign out?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Sign Out",
+          onPress: async () => {
+            if (onSignout) {
+              await onSignout();
+            }
+            router.replace("/(auth)/signin");
+          },
+          style: "destructive"
+        }
+      ]
+    );
   };
 
   const hasPhoto = Boolean(photoState.uri);
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.logoutButton} onPress={handleSignout}>
-        <Text style={styles.logoutText}>Sign Out</Text>
+      <TouchableOpacity style={styles.signoutButton} onPress={handleSignout}>
+        <Ionicons name="log-out" size={24} color="#ff5b5b" />
       </TouchableOpacity>
 
       <Animated.ScrollView
@@ -76,19 +91,11 @@ export default function Profile() {
         scrollEventThrottle={16}
       >
         <View style={styles.profileSection}>
-          {hasPhoto ? (
-            <Image
-              style={styles.photoFullImage}
-              resizeMode="cover"
-              source={{ uri: photoState.uri }}
-            />
-          ) : (
-            <Image
-              style={styles.photoFullImage}
-              resizeMode="cover"
-              source={require('@/assets/images/default_icon.png')}
-            />
-          )}
+          <Image
+            style={styles.photoFullImage}
+            resizeMode="cover"
+            source={hasPhoto ? { uri: photoState.uri } : require('@/assets/images/default_icon.png')}
+          />
           <Text style={styles.usernameText}>{username}</Text>
         </View>
 
@@ -116,14 +123,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#1e1e30",
   },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 120,
-    paddingTop: 60,
-  },
   profileSection: {
     alignItems: "center",
     marginBottom: 30,
+    marginTop: 30,
   },
   photoFullImage: {
     width: imageSize,
@@ -154,15 +157,18 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
   },
-  logoutButton: {
+  signoutButton: {
     position: "absolute",
     top: 40,
     right: 20,
     zIndex: 10,
-  },
-  logoutText: {
-    color: "#ff5b5b",
-    fontSize: 16,
+    backgroundColor: "#2b2b4b",
+    borderRadius: 50,
+    padding: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 50,
+    height: 50,
   },
   aboutText: {
     color: "#999",
