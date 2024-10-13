@@ -1,17 +1,16 @@
-import React, { FC, useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Modal, Animated, Dimensions } from 'react-native';
+import React, { FC, useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Modal, Animated, Dimensions, Platform } from 'react-native';
 import { useAuth } from '@/context/GlobalContext';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { API_URL } from "@/context/GlobalContext";
-import Cloud from '../../components/Cloud'; // Import the Cloud component
+import Cloud from '../../components/Cloud';
 
 const { width, height } = Dimensions.get("window");
 
 const AddFloodWarning: FC = () => {
     const [description, setDescription] = useState('');
     const [photoState, setPhotoState] = useState<{ uri?: string }>({});
-    const [permissionStatus, requestPermission] = ImagePicker.useCameraPermissions(); // Changed to ImagePicker
     const [modalVisible, setModalVisible] = useState(false);
     const { authState } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -34,53 +33,59 @@ const AddFloodWarning: FC = () => {
         })();
     }, []);
 
-    async function handleImageLibraryPress() {
+    const requestCameraPermission = useCallback(async () => {
+        if (Platform.OS !== 'web') {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission needed', 'Sorry, we need camera permissions to make this work!');
+                return false;
+            }
+        }
+        return true;
+    }, []);
+
+    const handleImageLibraryPress = useCallback(async () => {
         setModalVisible(false);
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [4, 3],
-            quality: 1,
+            quality: 0.8,
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             setPhotoState(result.assets[0]);
         }
-    }
+    }, []);
 
-    async function handleCameraPress() {
+    const handleCameraPress = useCallback(async () => {
         setModalVisible(false);
-        if (!permissionStatus || !permissionStatus.granted) {
-            const { granted } = await requestPermission();
-            if (!granted) {
-                Alert.alert('Permission Denied', 'Permission to access camera was denied.');
-                return;
-            }
-        }
+        const hasCameraPermission = await requestCameraPermission();
+        if (!hasCameraPermission) return;
 
         let result = await ImagePicker.launchCameraAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [4, 3],
-            quality: 1,
+            quality: 0.8,
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             setPhotoState(result.assets[0]);
         }
-    }
+    }, [requestCameraPermission]);
 
-    function handleRetake() {
+    const handleRetake = useCallback(() => {
         setPhotoState({});
-    }
+    }, []);
 
-    const resetForm = () => {
+    const resetForm = useCallback(() => {
         setDescription('');
         setPhotoState({});
         setLoading(false);
-    };
+    }, []);
 
-    const handleSubmit = async () => {
+    const handleSubmit = useCallback(async () => {
         if (!description || !photoState.uri || !location) {
             Alert.alert("Missing Fields", "Please provide a description, upload an image, and ensure location access.");
             return;
@@ -113,19 +118,19 @@ const AddFloodWarning: FC = () => {
                 Alert.alert('Success', 'Flood warning submitted successfully!');
                 resetForm();
             } else {
-                Alert.alert('Error', result.message || 'An error occurred while submitting.');
+                throw new Error(result.message || 'An error occurred while submitting.');
             }
         } catch (error) {
-            console.error(error)
-            Alert.alert('Error', 'Failed to submit the flood warning.');
+            console.error(error);
+            Alert.alert('Error', error instanceof Error ? error.message : 'Failed to submit the flood warning.');
         } finally {
             setLoading(false);
         }
-    };
+    }, [description, photoState.uri, location, authState?.token, resetForm]);
 
-    function openModal() {
+    const openModal = useCallback(() => {
         setModalVisible(true);
-    }
+    }, []);
 
     return (
         <View style={styles.container}>
@@ -161,13 +166,13 @@ const AddFloodWarning: FC = () => {
                         <TouchableOpacity style={styles.actionButton} onPress={handleRetake}>
                             <Text style={styles.actionButtonText}>Retake</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                            <Text style={styles.submitButtonText}>SUBMIT</Text>
+                        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
+                            <Text style={styles.submitButtonText}>{loading ? 'SUBMITTING...' : 'SUBMIT'}</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
-                    <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                        <Text style={styles.submitButtonText}>SUBMIT</Text>
+                    <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
+                        <Text style={styles.submitButtonText}>{loading ? 'SUBMITTING...' : 'SUBMIT'}</Text>
                     </TouchableOpacity>
                 )}
 
@@ -199,7 +204,6 @@ const AddFloodWarning: FC = () => {
 };
 
 const styles = StyleSheet.create({
-    // ... (your existing styles)
     container: {
         flex: 1,
         backgroundColor: '#1D1D2E',
@@ -207,7 +211,7 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
         padding: 20,
-        paddingBottom: 120, // Increased to accommodate the cloud pattern
+        paddingBottom: 120,
     },
     label: {
         fontSize: 18,
@@ -293,7 +297,7 @@ const styles = StyleSheet.create({
         marginTop: 15,
     },
     bottomSpace: {
-        height: 100, // Space to ensure content isn't hidden behind the cloud
+        height: 100,
     },
 });
 
