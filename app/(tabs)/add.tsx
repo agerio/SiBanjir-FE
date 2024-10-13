@@ -1,17 +1,16 @@
 import React, { FC, useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Modal, Animated, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Modal, Animated, Dimensions, Platform, Linking } from 'react-native';
 import { useAuth } from '@/context/GlobalContext';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { API_URL } from "@/context/GlobalContext";
-import Cloud from '../../components/Cloud'; // Import the Cloud component
+import Cloud from '../../components/Cloud';
 
 const { width, height } = Dimensions.get("window");
 
 const AddFloodWarning: FC = () => {
     const [description, setDescription] = useState('');
     const [photoState, setPhotoState] = useState<{ uri?: string }>({});
-    const [permissionStatus, requestPermission] = ImagePicker.useCameraPermissions(); // Changed to ImagePicker
     const [modalVisible, setModalVisible] = useState(false);
     const { authState } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -20,8 +19,9 @@ const AddFloodWarning: FC = () => {
 
     useEffect(() => {
         (async () => {
-            let { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
+            // Request location permission
+            let { status: locationStatus } = await Location.requestForegroundPermissionsAsync();
+            if (locationStatus !== 'granted') {
                 Alert.alert('Permission Denied', 'Permission to access location was denied.');
                 return;
             }
@@ -31,6 +31,14 @@ const AddFloodWarning: FC = () => {
                 lat: currentLocation.coords.latitude,
                 long: currentLocation.coords.longitude,
             });
+
+            // Request camera permission for iOS
+            if (Platform.OS === 'ios') {
+                const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+                if (cameraStatus !== 'granted') {
+                    Alert.alert('Camera Permission', 'Please grant camera permission in your device settings to use this feature.');
+                }
+            }
         })();
     }, []);
 
@@ -50,10 +58,18 @@ const AddFloodWarning: FC = () => {
 
     async function handleCameraPress() {
         setModalVisible(false);
-        if (!permissionStatus || !permissionStatus.granted) {
-            const { granted } = await requestPermission();
-            if (!granted) {
-                Alert.alert('Permission Denied', 'Permission to access camera was denied.');
+        
+        if (Platform.OS === 'ios') {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert(
+                    'Camera Permission Required',
+                    'This app needs access to your camera. Please grant permission in your device settings.',
+                    [
+                        { text: 'OK', onPress: () => console.log('OK Pressed') },
+                        { text: 'Open Settings', onPress: () => Linking.openSettings() }
+                    ]
+                );
                 return;
             }
         }
@@ -199,7 +215,6 @@ const AddFloodWarning: FC = () => {
 };
 
 const styles = StyleSheet.create({
-    // ... (your existing styles)
     container: {
         flex: 1,
         backgroundColor: '#1D1D2E',
@@ -207,7 +222,7 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
         padding: 20,
-        paddingBottom: 120, // Increased to accommodate the cloud pattern
+        paddingBottom: 120,
     },
     label: {
         fontSize: 18,
@@ -293,7 +308,7 @@ const styles = StyleSheet.create({
         marginTop: 15,
     },
     bottomSpace: {
-        height: 100, // Space to ensure content isn't hidden behind the cloud
+        height: 100,
     },
 });
 

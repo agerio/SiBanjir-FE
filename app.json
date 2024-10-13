@@ -19,7 +19,13 @@
       "supportsTablet": true,
       "config": {
         "usesNonExemptEncryption": false
-      }
+      },
+      "bundleIdentifier": "com.gzng.DECO3801"
+    },
+    "infoPlist": {
+      "NSCameraUsageDescription": "This app uses the camera to take photos of flood warnings.",
+      "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to upload images.",
+      "NSLocationWhenInUseUsageDescription": "This app uses your location to provide flood warnings in your area."
     },
     "android": {
       "adaptiveIcon": {
@@ -38,6 +44,11 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "920bc0b8-b7ca-4586-88a8-e500193fe9c3"
+      }
     }
   }
 }
