@@ -63,7 +63,7 @@ export default function App() {
             { latitude: sw.coordinates.latitude, longitude: sw.coordinates.longitude }
           );
           return distance <= 3000;
-        });
+        }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         setFilteredFloodWatches(filteredFloodWatches);
         setFilteredSpecialWarnings(filteredSpecialWarnings);
