@@ -1,34 +1,37 @@
-export interface FloodWatch {
+export interface Coordinates {
+    latitude: number;
+    longitude: number;
+  }
+  
+  export interface FloodWatch {
     id: string;
     name: string;
-    coordinates: {
-      latitude: number;
-      longitude: number;
-    };
+    coordinates: Coordinates;
     xingname: string;
     class: string;
-    tendency?: string;
-    hgt: number;
+    tendency: string;
+    hgt: string;
     obs_time: string;
   }
   
-export interface SpecialWarning {
+  export interface SpecialWarning {
     id: string;
     description: string;
-    coordinates: {
-        latitude: number;
-        longitude: number;
-    };
+    coordinates: Coordinates;
     image_url: string;
     created_at: string;
-}
-
-export interface FriendLocation {
+  }
+  
+  export interface FriendLocation {
     id: string;
     last_login: string;
+    coordinates: Coordinates;
     image_url: string;
-    coordinates: {
-        latitude: number;
-        longitude: number;
-    };
-}
+    created_at: string;
+  }
+  
+  export interface Markers {
+    floodwatches: FloodWatch[];
+    specialWarnings: SpecialWarning[];
+    friendLocation: FriendLocation[];
+  }
