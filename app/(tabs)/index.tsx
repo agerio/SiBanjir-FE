@@ -80,7 +80,7 @@ export default function App() {
     refreshData();
   }, [refreshData]);
 
-  const handleFloodWatchPress = useCallback((id) => {
+  const handlePress = useCallback((id) => {
     setRefreshKey((prev) => prev + 1);
     setInitialLocation(id)
 
@@ -123,7 +123,7 @@ export default function App() {
                   <TouchableOpacity
                     key={fw.id}
                     style={styles.floodWatchContainer}
-                    onPress={() => handleFloodWatchPress(fw.id)}  // Handle click
+                    onPress={() => handlePress(fw.id)}  // Handle click
                   >
                     <View style={{ flex: 1 }}>
                         <Text style={styles.floodWatchText}>{fw.name}</Text>
@@ -138,27 +138,27 @@ export default function App() {
             )}
             
             {filteredSpecialWarnings.length > 0 && (
-  <View>
-    <Text style={styles.header}>Nearby Special Warnings</Text>
-    {filteredSpecialWarnings.map(sw => (
-      <View key={sw.id} style={styles.specialWarningContainer}>
-        <Image source={{ uri: sw.image_url }} style={styles.warningImage} />
+              <View>
+                <Text style={styles.header}>Nearby Special Warnings</Text>
+                {filteredSpecialWarnings.map(sw => (
+                  <TouchableOpacity key={sw.id} style={styles.specialWarningContainer} onPress={() => handlePress(sw.id)}>
+                    <Image source={{ uri: sw.image_url }} style={styles.warningImage} />
 
-        <View style={styles.warningTextContainer}>
-          <Text style={styles.floodWatchText}>{sw.description}</Text>
-          
-          <View style={styles.metadataContainer}>
-            <Image source={sw.profile_picture ? { uri: sw.profile_picture } : require('@/assets/images/default_icon.png')} style={styles.profilePicture} />
-            <View style={styles.metadataTextContainer}>
-              <Text style={styles.username}>{sw.created_by}</Text>
-              <Text style={styles.createdAt}>{moment(sw.created_at).fromNow()}</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-    ))}
-  </View>
-)}
+                    <View style={styles.warningTextContainer}>
+                      <Text style={styles.warningText}>{sw.description}</Text>
+                      
+                      <View style={styles.metadataContainer}>
+                        <Image source={sw.profile_picture ? { uri: sw.profile_picture } : require('@/assets/images/default_icon.png')} style={styles.profilePicture} />
+                        <View style={styles.metadataTextContainer}>
+                          <Text style={styles.username}>{sw.created_by}</Text>
+                          <Text style={styles.createdAt}>{moment(sw.created_at).fromNow()}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              )}
 
           </BottomSheetScrollView>
         </BottomSheet>
@@ -243,6 +243,12 @@ const styles = StyleSheet.create({
     height: 80, // Fixed height for the image
     borderRadius: 10,
   },
+  warningText: {
+    fontSize: 14,
+    fontWeight: "semibold",
+    color: "#fff",
+    flex: 1,
+  },
   warningTextContainer: {
     width: '60%', // 6:4 ratio, with right side taking 60%
     paddingLeft: 10,
@@ -250,19 +256,19 @@ const styles = StyleSheet.create({
   },
   metadataContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    // justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 5,
   },
   profilePicture: {
     width: 30,
     height: 30,
-    borderRadius: 15, // Circular profile picture
+    borderRadius: 15,
   },
   metadataTextContainer: {
+    marginLeft: 15,
     flexDirection: 'column',
     justifyContent: 'flex-start',
-    width: '70%', // Adjust width as needed
   },
   username: {
     fontSize: 12,
