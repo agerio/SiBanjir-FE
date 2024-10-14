@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { StyleSheet, Appearance, View, Text, Image, Dimensions, ActivityIndicator, TouchableOpacity, Modal, ScrollView, TouchableWithoutFeedback } from "react-native";
+import { StyleSheet, Appearance, View, Text, Image, Dimensions, Button, ActivityIndicator, TouchableOpacity, Modal, ScrollView, TouchableWithoutFeedback } from "react-native";
 import MapView, { Circle, Marker, Callout, Region } from "react-native-maps";
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
@@ -175,23 +175,32 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
       title="Special Warning"
     >
       <Callout>
-        <View>
-          <WebView style={{ height: 0.45 * screenWidth, width: 0.7 * screenWidth }} source={{ uri: warning.image_url }} />
-          <View style={styles.calloutContainer}>
-            <Text style={styles.calloutDescription}>{warning.description}</Text>
-            
-            <View style={styles.metadataContainer}>
-              <Image source={warning.profile_picture ? { uri: warning.profile_picture } : require('@/assets/images/default_icon.png')} style={styles.profilePicture} />
-              <View style={styles.metadataTextContainer}>
-                <Text style={styles.username}>{warning.created_by}</Text>
-                <Text style={styles.createdAt}>{moment(warning.created_at).fromNow()}</Text>
-              </View>
+        <View style={styles.calloutWrapper}>
+          <WebView
+            style={styles.image}
+            source={{ uri: warning.image_url }}
+          />
+          <Text style={styles.description}>{warning.description}</Text>
+          <View style={styles.metadataContainer}>
+            <View style={styles.profilePicture}>
+              <WebView
+                style={{flex:1}}
+                source={warning.profile_picture ? { uri: warning.profile_picture } : require('@/assets/images/default_icon.png')}
+              />
+            </View>
+            <View style={styles.metadataTextContainer}>
+              <Text style={styles.username}>{warning.created_by}</Text>
+              <Text style={styles.createdAt}>{moment(warning.created_at).fromNow()}</Text>
+            </View>
+            <View style={styles.buttonContainer}>
+            <TouchableOpacity onPress={() => {}} style={styles.iconCloseButton}>
+              <Ionicons name="close" size={24} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => {}} style={styles.iconCheckButton}>
+              <Ionicons name="checkmark" size={24} color="white" />
+            </TouchableOpacity>
             </View>
           </View>
-          {/* <View style={styles.calloutContainer}>
-            <Text style={styles.calloutDescription}>{warning.description}</Text>
-            <Text style={styles.calloutDate}>{warning.created_at}</Text>
-          </View> */}
         </View>
       </Callout>
     </Marker>
@@ -359,35 +368,62 @@ const styles = StyleSheet.create({
   legendButtonText: {
     fontWeight: 'bold',
   },
-  calloutContainer: {
-    padding: 5,
+  calloutWrapper: {
+    width: 0.8 * screenWidth,
+    padding: 10,
   },
-  calloutDescription: {
+  image: {
+    height: 0.45 * screenWidth,
+    width: '100%',
+    marginBottom: 5,
+  },
+  description: {
     fontSize: 14,
-  },
-  calloutDate: {
-    fontSize: 12,
-    color: 'gray',
-  },
-  username: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  createdAt: {
-    fontSize: 10,
-    color: '#999',
+    marginBottom: 10,
+    color: '#333',
   },
   metadataContainer: {
     flexDirection: 'row',
-    // justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 5,
+    justifyContent: 'space-between',
+  },
+  profilePicture: {
+    overflow: 'hidden',
+    flex: 0,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
   },
   metadataTextContainer: {
+    flex: 1,
+    marginRight: 5,
     marginLeft: 15,
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
+  },
+  username: {
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  createdAt: {
+    fontSize: 12,
+    color: '#666',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  iconCloseButton: {
+    marginLeft: 5,
+    backgroundColor: '#912424', // Change to your desired background color
+    padding: 5,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  iconCheckButton: {
+    marginLeft: 5,
+    backgroundColor: '#53964e', // Change to your desired background color
+    padding: 5,
+    borderRadius: 5,
+    alignItems: 'center',
   },
   friendMarker: {
     width: 30,
