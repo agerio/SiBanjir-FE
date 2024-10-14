@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { StyleSheet, Appearance, View, Text, Image, Dimensions, ActivityIndicator, TouchableOpacity  } from "react-native";
+import { StyleSheet, Appearance, View, Text, Image, Dimensions, ActivityIndicator, TouchableOpacity, Modal, ScrollView, TouchableWithoutFeedback } from "react-native";
 import MapView, { Circle, Marker, Callout, Region } from "react-native-maps";
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
@@ -40,6 +40,35 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
       longitude: 153.0954163,
     },
   });
+  const [isModalVisible, setModalVisible] = useState(false); // State for modal visibility
+
+  const legendData = [
+    {
+      image: floodWatchImage['unknown'],
+      title: "Unknown / No Classification",
+      description: "No reliable data available. Conditions are uncertain, and potential flooding risks are unclear. Monitoring efforts may be hampered, making it difficult to provide an accurate assessment."
+    },
+    {
+      image: floodWatchImage['below minor'],
+      title: "Below Minor",
+      description: "Water levels are rising but remain below thresholds that cause noticeable impacts. Some low-lying areas may experience minor inundation, but no significant disruptions to daily life are expected. Residents may notice wet ground conditions, but roads and access routes remain open."
+    },
+    {
+      image: floodWatchImage['minor'],
+      title: "Minor",
+      description: "Causes inconvenience. Low-lying areas adjacent to watercourses are inundated, with minor roads potentially closed and low-level bridges submerged. In urban settings, backyards and buildings below floor level may be affected, as well as bicycle and pedestrian paths. In rural areas, removal of livestock and equipment may be necessary."
+    },
+    {
+      image: floodWatchImage['moderate'],
+      title: "Moderate",
+      description: "In addition to minor flooding impacts, inundation coverage is more extensive. Main traffic routes may be affected, and some buildings could experience flooding above floor level. Evacuations from at-risk areas may be required. In rural regions, livestock removal becomes essential."
+    },
+    {
+      image: floodWatchImage['major'],
+      title: "Major",
+      description: "Extensive flooding occurs in both rural and urban areas. Many buildings may be impacted above floor level, and properties, as well as entire towns, are likely to be isolated. Major rail and traffic routes may be closed, and evacuation of flood-affected areas is often necessary. Utility services such as electricity and water may be significantly disrupted."
+    },
+  ];
 
   const requestLocationPermission = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -49,13 +78,13 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
   };
 
   useEffect(() => {
-    requestLocationPermission()
+    requestLocationPermission();
   }, []);
 
   // Handle granted permission
   useEffect(() => {
     if (!mapState.locationPermission) return;
-  
+
     const subscription = Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.High,
@@ -70,12 +99,12 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
           ...prevState,
           userLocation,
         }));
-  
+
         // Pass user's location back to parent
         onLocationChange(userLocation);
       }
     );
-  
+
     return () => {
       if (subscription && typeof subscription.remove === 'function') {
         subscription.remove();
@@ -88,12 +117,12 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
   const fetchInterval = 5000;
   useEffect(() => {
     if (!mapState.locationPermission) return;
-    
+
     const sendUserLocation = async () => {
       const isAllowed = await AsyncStorage.getItem(ALLOW_LOCATION_SHARING);
-      const parsedIsAllowed = isAllowed !== null ? JSON.parse(isAllowed) : true
+      const parsedIsAllowed = isAllowed !== null ? JSON.parse(isAllowed) : true;
       if (!parsedIsAllowed) {
-        return
+        return;
       }
       const lat = mapState.userLocation.latitude;
       const long = mapState.userLocation.longitude;
@@ -125,7 +154,7 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
       const markerLocation = 
         floodWatches.find(fw => fw.id === id)?.coordinates || 
         specialWarnings.find(sw => sw.id === id)?.coordinates ||
-        friendLocations.find(fl => fl.id === id )?.coordinates;
+        friendLocations.find(fl => fl.id === id)?.coordinates;
 
       if (markerLocation) {
         const region: Region = {
@@ -142,7 +171,7 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
       }
     }
   };
-  
+
   // Flood Watch renderer
   const renderFloodWatchMarker = (floodWatch: FloodWatch) => (
     <React.Fragment key={floodWatch.id}>
@@ -162,45 +191,73 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
       />
     </React.Fragment>
   );
-  
-    // Special Warning renderer
-    const renderSpecialWarningMarker = (warning: SpecialWarning) => (
-      <Marker
+
+  // Special Warning renderer
+  const renderSpecialWarningMarker = (warning: SpecialWarning) => (
+    <Marker
       ref={ref => (markersRef.current[warning.id] = ref)}
       image={require('@/assets/images/special_warning.png')}
       key={warning.id}
       coordinate={warning.coordinates}
       title="Special Warning"
+    >
+      <Callout>
+        <View>
+          <WebView style={{ height: 0.45 * screenWidth, width: 0.7 * screenWidth }} source={{ uri: warning.image_url }} />
+          <View style={styles.calloutContainer}>
+            <Text style={styles.calloutDescription}>{warning.description}</Text>
+            <Text style={styles.calloutDate}>{warning.created_at}</Text>
+          </View>
+        </View>
+      </Callout>
+    </Marker>
+  );
+
+  // Friend Location renderer
+  const renderFriendLocation = (friendloc: FriendLocation) => (
+    <React.Fragment key={friendloc.id}>
+      <Marker
+        ref={ref => (markersRef.current[friendloc.id] = ref)}
+        coordinate={friendloc.coordinates}
+        title={`${friendloc.id}`}
+        description={`${friendloc.last_login}`}
       >
-        <Callout>
-          <View>
-            <WebView style={{ height: 0.45*screenWidth , width: 0.7*screenWidth}} source={{ uri: warning.image_url }} />
-            <View style={styles.calloutContainer}>
-              <Text style={styles.calloutDescription}>{warning.description}</Text>
-              <Text style={styles.calloutDate}>{warning.created_at}</Text>
-            </View>
-          </View>
-        </Callout>
+        <View style={styles.friendMarker}>
+          <Image 
+            style={{ width: '100%', height: '100%' }}
+            source={friendloc.image_url ? { uri: friendloc.image_url } : require('@/assets/images/default_icon.png')} />
+        </View>
       </Marker>
-    );
-    
-    // Friend Location renderer
-    const renderFriendLocation = (friendloc: FriendLocation) => (
-      <React.Fragment key={friendloc.id}>
-        <Marker
-          ref={ref => (markersRef.current[friendloc.id] = ref)}
-          coordinate={friendloc.coordinates}
-          title={`${friendloc.id}`}
-          description={`${friendloc.last_login}`}
-        >
-          <View style={styles.friendMarker}>
-            <Image 
-              style={{width:'100%', height:'100%'}}
-              source={friendloc.image_url ? { uri: friendloc.image_url } : require('@/assets/images/default_icon.png')}/>
+    </React.Fragment>
+  );
+
+  // Render the modal for legends
+  const renderLegendModal = () => (
+    <Modal
+      transparent={true}
+      visible={isModalVisible}
+      animationType="slide"
+      onRequestClose={() => setModalVisible(false)}
+    >
+      <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <ScrollView style={styles.scrollContainer}>
+              {legendData.map((item, index) => (
+                <View key={index} style={styles.legendRow}>
+                  <Image source={item.image} style={styles.legendImage} />
+                  <View style={styles.legendTextContainer}>
+                    <Text style={styles.legendTitle}>{item.title}</Text>
+                    <Text style={styles.legendDescription}>{item.description}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
           </View>
-        </Marker>
-      </React.Fragment>
-    );
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+  );
 
   return (
     <>
@@ -226,6 +283,15 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
         {/* Render Floodwatch Markers */}
         {floodWatches.map(renderFloodWatchMarker)}
       </MapView>
+      
+      {/* Legends Button */}
+      {renderLegendModal()}
+      <TouchableOpacity
+        style={styles.legendButton}
+        onPress={() => setModalVisible(true)}
+      >
+        <Text style={styles.legendButtonText}>Legends</Text>
+      </TouchableOpacity>
     </>
   );
 };
@@ -234,52 +300,74 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  calloutContainer: {
-    width: 0.7 * screenWidth,
-    padding: 10,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // semi-transparent background
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  calloutTitle: {
+  modalContainer: {
+    width: '90%',
+    maxHeight: '80%', // Limit the modal height
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  legendImage: {
+    width: 50,
+    height: 50,
+    marginRight: 10,
+  },
+  legendTextContainer: {
+    flex: 1,
+  },
+  legendTitle: {
     fontWeight: 'bold',
-    fontSize: 16,
-    marginBottom: 5,
   },
-  calloutImage: {
-    width: 200,
-    height: 100,
-    marginBottom: 5,
+  legendDescription: {
+    fontSize: 12,
+    color: 'gray',
+  },
+  legendButton: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: 'white',
+    padding: 10,
+    borderRadius: 5,
+    elevation: 5,
+  },
+  legendButtonText: {
+    fontWeight: 'bold',
+  },
+  calloutContainer: {
+    padding: 5,
   },
   calloutDescription: {
     fontSize: 14,
   },
   calloutDate: {
     fontSize: 12,
-    fontStyle: 'italic',
+    color: 'gray',
   },
   friendMarker: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'blue',
-  },
-  refreshButton: {
-    position: 'absolute',
-    opacity: 0.80,
-    bottom: 10,
-    right: 10,
-    backgroundColor: 'white',
-    borderRadius: 30,
-    padding: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
   },
 });
+
+export default ShowMap;
+
 
 const darkMapStyle = [
   {
@@ -541,5 +629,3 @@ const darkMapStyle = [
     ]
   }
 ];
-
-export default ShowMap;
