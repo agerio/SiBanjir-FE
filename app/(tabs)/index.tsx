@@ -78,7 +78,7 @@ export default function App() {
 
   useEffect(() => {
     refreshData();
-  }, [refreshData]);
+  }, []);
 
   const handlePress = useCallback((id) => {
     setRefreshKey((prev) => prev + 1);
