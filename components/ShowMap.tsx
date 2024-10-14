@@ -9,6 +9,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { floodClassColor, floodWatchImage } from "@/constants/FloodWatch";
 import { FloodWatch, SpecialWarning, FriendLocation } from "@/types/Marker";
+import moment from 'moment';
 
 const colorScheme = Appearance.getColorScheme();
 const screenWidth = Dimensions.get("window").width;
@@ -56,7 +57,7 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
   // Handle granted permission
   useEffect(() => {
     if (!mapState.locationPermission) return;
-
+    console.log("uwu")
     const subscription = Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.High,
@@ -178,8 +179,19 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
           <WebView style={{ height: 0.45 * screenWidth, width: 0.7 * screenWidth }} source={{ uri: warning.image_url }} />
           <View style={styles.calloutContainer}>
             <Text style={styles.calloutDescription}>{warning.description}</Text>
-            <Text style={styles.calloutDate}>{warning.created_at}</Text>
+            
+            <View style={styles.metadataContainer}>
+              <Image source={warning.profile_picture ? { uri: warning.profile_picture } : require('@/assets/images/default_icon.png')} style={styles.profilePicture} />
+              <View style={styles.metadataTextContainer}>
+                <Text style={styles.username}>{warning.created_by}</Text>
+                <Text style={styles.createdAt}>{moment(warning.created_at).fromNow()}</Text>
+              </View>
+            </View>
           </View>
+          {/* <View style={styles.calloutContainer}>
+            <Text style={styles.calloutDescription}>{warning.description}</Text>
+            <Text style={styles.calloutDate}>{warning.created_at}</Text>
+          </View> */}
         </View>
       </Callout>
     </Marker>
@@ -356,6 +368,26 @@ const styles = StyleSheet.create({
   calloutDate: {
     fontSize: 12,
     color: 'gray',
+  },
+  username: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  createdAt: {
+    fontSize: 10,
+    color: '#999',
+  },
+  metadataContainer: {
+    flexDirection: 'row',
+    // justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  metadataTextContainer: {
+    marginLeft: 15,
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
   },
   friendMarker: {
     width: 30,

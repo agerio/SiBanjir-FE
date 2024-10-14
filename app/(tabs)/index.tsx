@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Text, StyleSheet, View, Image, TouchableOpacity, Appearance, Dimensions } from 'react-native';
+import { Text, StyleSheet, View, Image, TouchableOpacity, Appearance, Dimensions, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from "expo-router";
 import ShowMap from "../../components/ShowMap";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -47,7 +47,6 @@ export default function App() {
         fetchFriendLocation(),
       ]);
       setMarkers({ floodwatches, specialWarnings, friendLocation });
-      getMarkerDistance();
     } catch (error) {
       console.error('Error refreshing data:', error);
     } finally {
@@ -55,7 +54,7 @@ export default function App() {
     }
   };
 
-  const getMarkerDistance = useCallback(async () => {
+  const getMarkerDistance = async () => {
     if (userLocation.latitude && userLocation.longitude) {
       const filteredFloodWatches = markers.floodwatches.filter(fw => {
         const distance = getDistance(
@@ -64,7 +63,7 @@ export default function App() {
         );
         return distance <= 3000;
       });
-
+      
       const filteredSpecialWarnings = markers.specialWarnings.filter(sw => {
         const distance = getDistance(
           { latitude: userLocation.latitude, longitude: userLocation.longitude },
@@ -72,11 +71,11 @@ export default function App() {
         );
         return distance <= 3000;
       }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
+      
       setFilteredFloodWatches(filteredFloodWatches);
       setFilteredSpecialWarnings(filteredSpecialWarnings);
     }
-  }, [userLocation]);
+  };
 
   useEffect(() => {
     refreshData();
@@ -84,7 +83,7 @@ export default function App() {
   
   useEffect(() => {
     getMarkerDistance();
-  }, [userLocation]);
+  }, [userLocation, markers]);
 
   const handlePress = useCallback((id) => {
     setRefreshKey((prev) => prev + 1);
@@ -122,50 +121,51 @@ export default function App() {
           handleIndicatorStyle={{backgroundColor:'gray'}}
         >
           <BottomSheetScrollView contentContainerStyle={styles.contentContainer}>
-            {filteredFloodWatches.length > 0 && (
-              <View>
-                <Text style={styles.header}>Nearby Flood Watches</Text>
-                {filteredFloodWatches.map(fw => (
-                  <TouchableOpacity
-                    key={fw.id}
-                    style={styles.floodWatchContainer}
-                    onPress={() => handlePress(fw.id)}  // Handle click
-                  >
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.floodWatchText}>{fw.name}</Text>
-                        <Text style={styles.floodWatchDescription}>
-                            {fw.class}
-                        </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={24} color="white" style={{ marginLeft: 'auto' }} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-            
-            {filteredSpecialWarnings.length > 0 && (
-              <View>
-                <Text style={styles.header}>Nearby Special Warnings</Text>
-                {filteredSpecialWarnings.map(sw => (
-                  <TouchableOpacity key={sw.id} style={styles.specialWarningContainer} onPress={() => handlePress(sw.id)}>
-                    <Image source={{ uri: sw.image_url }} style={styles.warningImage} />
-
-                    <View style={styles.warningTextContainer}>
-                      <Text style={styles.warningText}>{sw.description}</Text>
-                      
-                      <View style={styles.metadataContainer}>
-                        <Image source={sw.profile_picture ? { uri: sw.profile_picture } : require('@/assets/images/default_icon.png')} style={styles.profilePicture} />
-                        <View style={styles.metadataTextContainer}>
-                          <Text style={styles.username}>{sw.created_by}</Text>
-                          <Text style={styles.createdAt}>{moment(sw.created_at).fromNow()}</Text>
+            {loading ? (
+              <ActivityIndicator size="large" color="#fff" />
+            ) : (
+              <>
+                {filteredFloodWatches.length > 0 && (
+                  <View>
+                    <Text style={styles.header}>Nearby Flood Watches</Text>
+                    {filteredFloodWatches.map(fw => (
+                      <TouchableOpacity
+                        key={fw.id}
+                        style={styles.floodWatchContainer}
+                        onPress={() => handlePress(fw.id)}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.floodWatchText}>{fw.name}</Text>
+                          <Text style={styles.floodWatchDescription}>{fw.class}</Text>
                         </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              )}
+                        <Ionicons name="chevron-forward" size={24} color="white" style={{ marginLeft: 'auto' }} />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
 
+                {filteredSpecialWarnings.length > 0 && (
+                  <View>
+                    <Text style={styles.header}>Nearby Special Warnings</Text>
+                    {filteredSpecialWarnings.map(sw => (
+                      <TouchableOpacity key={sw.id} style={styles.specialWarningContainer} onPress={() => handlePress(sw.id)}>
+                        <Image source={{ uri: sw.image_url }} style={styles.warningImage} />
+                        <View style={styles.warningTextContainer}>
+                          <Text style={styles.warningText}>{sw.description}</Text>
+                          <View style={styles.metadataContainer}>
+                            <Image source={sw.profile_picture ? { uri: sw.profile_picture } : require('@/assets/images/default_icon.png')} style={styles.profilePicture} />
+                            <View style={styles.metadataTextContainer}>
+                              <Text style={styles.username}>{sw.created_by}</Text>
+                              <Text style={styles.createdAt}>{moment(sw.created_at).fromNow()}</Text>
+                            </View>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </>
+            )}
           </BottomSheetScrollView>
         </BottomSheet>
       </SafeAreaView>
