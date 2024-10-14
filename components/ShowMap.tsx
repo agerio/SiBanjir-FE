@@ -42,34 +42,6 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
   });
   const [isModalVisible, setModalVisible] = useState(false); // State for modal visibility
 
-  const legendData = [
-    {
-      image: floodWatchImage['unknown'],
-      title: "Unknown / No Classification",
-      description: "No reliable data available. Conditions are uncertain, and potential flooding risks are unclear. Monitoring efforts may be hampered, making it difficult to provide an accurate assessment."
-    },
-    {
-      image: floodWatchImage['below minor'],
-      title: "Below Minor",
-      description: "Water levels are rising but remain below thresholds that cause noticeable impacts. Some low-lying areas may experience minor inundation, but no significant disruptions to daily life are expected. Residents may notice wet ground conditions, but roads and access routes remain open."
-    },
-    {
-      image: floodWatchImage['minor'],
-      title: "Minor",
-      description: "Causes inconvenience. Low-lying areas adjacent to watercourses are inundated, with minor roads potentially closed and low-level bridges submerged. In urban settings, backyards and buildings below floor level may be affected, as well as bicycle and pedestrian paths. In rural areas, removal of livestock and equipment may be necessary."
-    },
-    {
-      image: floodWatchImage['moderate'],
-      title: "Moderate",
-      description: "In addition to minor flooding impacts, inundation coverage is more extensive. Main traffic routes may be affected, and some buildings could experience flooding above floor level. Evacuations from at-risk areas may be required. In rural regions, livestock removal becomes essential."
-    },
-    {
-      image: floodWatchImage['major'],
-      title: "Major",
-      description: "Extensive flooding occurs in both rural and urban areas. Many buildings may be impacted above floor level, and properties, as well as entire towns, are likely to be isolated. Major rail and traffic routes may be closed, and evacuation of flood-affected areas is often necessary. Utility services such as electricity and water may be significantly disrupted."
-    },
-  ];
-
   const requestLocationPermission = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status === 'granted') {
@@ -236,31 +208,38 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
     <Modal
       transparent={true}
       visible={isModalVisible}
-      animationType="slide"
+      animationType="fade"
       onRequestClose={() => setModalVisible(false)}
     >
-      <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <ScrollView style={styles.scrollContainer}>
-              {legendData.map((item, index) => (
-                <View key={index} style={styles.legendRow}>
-                  <Image source={item.image} style={styles.legendImage} />
-                  <View style={styles.legendTextContainer}>
-                    <Text style={styles.legendTitle}>{item.title}</Text>
-                    <Text style={styles.legendDescription}>{item.description}</Text>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Information</Text>
+            <TouchableOpacity onPress={() => setModalVisible(false)} style={{ padding: 8,}}>
+              <Ionicons name="close" size={24} color="gray" />
+            </TouchableOpacity>
           </View>
+          <ScrollView style={styles.scrollContainer}>
+            {legendData.map((item, index) => (
+              <View key={index} style={styles.legendRow}>
+                <Image source={item.image} style={styles.legendImage} />
+                <View style={styles.legendTextContainer}>
+                  <Text style={styles.legendTitle}>{item.title}</Text>
+                  <Text style={styles.legendDescription}>{item.description}</Text>
+                </View>
+              </View>
+            ))}
+            <View style={{marginBottom: 30}}></View>
+          </ScrollView>
         </View>
-      </TouchableWithoutFeedback>
+      </View>
     </Modal>
   );
 
   return (
     <>
+    <View style={{ flex: 1, position: 'relative' }}>
+
       <MapView
         ref={mapRef}
         camera={{
@@ -290,8 +269,9 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
         style={styles.legendButton}
         onPress={() => setModalVisible(true)}
       >
-        <Text style={styles.legendButtonText}>Legends</Text>
+        <Ionicons name="information-circle-outline" size={20} color="grey" />
       </TouchableOpacity>
+    </View>
     </>
   );
 };
@@ -302,19 +282,35 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // semi-transparent background
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContainer: {
     width: '90%',
-    maxHeight: '80%', // Limit the modal height
+    maxHeight: '60%',
     backgroundColor: 'white',
     borderRadius: 10,
-    padding: 20,
+    // padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#f1f1f1',
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  modalTitle: {
+    marginLeft: 10,
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   scrollContainer: {
     flexGrow: 1,
+    padding: 20,
   },
   legendRow: {
     flexDirection: 'row',
@@ -328,6 +324,7 @@ const styles = StyleSheet.create({
   },
   legendTextContainer: {
     flex: 1,
+    paddingRight: 20
   },
   legendTitle: {
     fontWeight: 'bold',
@@ -335,6 +332,7 @@ const styles = StyleSheet.create({
   legendDescription: {
     fontSize: 12,
     color: 'gray',
+    textAlign: 'justify',
   },
   legendButton: {
     position: 'absolute',
@@ -342,8 +340,9 @@ const styles = StyleSheet.create({
     left: 10,
     backgroundColor: 'white',
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 3,
     elevation: 5,
+    opacity: 0.75,
   },
   legendButtonText: {
     fontWeight: 'bold',
@@ -628,4 +627,37 @@ const darkMapStyle = [
       }
     ]
   }
+];
+
+const legendData = [
+  {
+    image: require('@/assets/images/special_warning.png'),
+    title: "Special Warning",
+    description: "A user-reported flood warning. If you are withinn the area, you can verify or refuute the warning!"
+  },
+  {
+    image: floodWatchImage['unknown'],
+    title: "Unknown / No Classification",
+    description: "No reliable data available. Conditions are uncertain, and potential flooding risks are unclear. Monitoring efforts may be hampered, making it difficult to provide an accurate assessment."
+  },
+  {
+    image: floodWatchImage['below minor'],
+    title: "Below Minor",
+    description: "Water levels are rising but remain below thresholds that cause noticeable impacts. Some low-lying areas may experience minor inundation, but no significant disruptions to daily life are expected. Residents may notice wet ground conditions, but roads and access routes remain open."
+  },
+  {
+    image: floodWatchImage['minor'],
+    title: "Minor",
+    description: "Causes inconvenience. Low-lying areas adjacent to watercourses are inundated, with minor roads potentially closed and low-level bridges submerged. In urban settings, backyards and buildings below floor level may be affected, as well as bicycle and pedestrian paths. In rural areas, removal of livestock and equipment may be necessary."
+  },
+  {
+    image: floodWatchImage['moderate'],
+    title: "Moderate",
+    description: "In addition to minor flooding impacts, inundation coverage is more extensive. Main traffic routes may be affected, and some buildings could experience flooding above floor level. Evacuations from at-risk areas may be required. In rural regions, livestock removal becomes essential."
+  },
+  {
+    image: floodWatchImage['major'],
+    title: "Major",
+    description: "Extensive flooding occurs in both rural and urban areas. Many buildings may be impacted above floor level, and properties, as well as entire towns, are likely to be isolated. Major rail and traffic routes may be closed, and evacuation of flood-affected areas is often necessary. Utility services such as electricity and water may be significantly disrupted."
+  },
 ];
