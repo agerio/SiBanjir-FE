@@ -59,7 +59,7 @@ const AddFloodWarning: FC = () => {
     }, []);
 
     const handleCameraPress = useCallback(async () => {
-        setModalVisible(false);
+        setModalVisible(true);
         const hasCameraPermission = await requestCameraPermission();
         if (!hasCameraPermission) return;
 
@@ -72,6 +72,7 @@ const AddFloodWarning: FC = () => {
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             setPhotoState(result.assets[0]);
+            setModalVisible(false);
         }
     }, [requestCameraPermission]);
 
