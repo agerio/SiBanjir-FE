@@ -37,7 +37,7 @@ export default function App() {
     friendLocation: [],
   });
 
-  const refreshData = useCallback(async () => {
+  const refreshData = async () => {
     setLoading(true);
     try {
       await fetchAllowLocationSharing();
@@ -47,38 +47,44 @@ export default function App() {
         fetchFriendLocation(),
       ]);
       setMarkers({ floodwatches, specialWarnings, friendLocation });
-
-      if (userLocation.latitude && userLocation.longitude) {
-        const filteredFloodWatches = floodwatches.filter(fw => {
-          const distance = getDistance(
-            { latitude: userLocation.latitude, longitude: userLocation.longitude },
-            { latitude: fw.coordinates.latitude, longitude: fw.coordinates.longitude }
-          );
-          return distance <= 3000;
-        });
-
-        const filteredSpecialWarnings = specialWarnings.filter(sw => {
-          const distance = getDistance(
-            { latitude: userLocation.latitude, longitude: userLocation.longitude },
-            { latitude: sw.coordinates.latitude, longitude: sw.coordinates.longitude }
-          );
-          return distance <= 3000;
-        }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-        setFilteredFloodWatches(filteredFloodWatches);
-        setFilteredSpecialWarnings(filteredSpecialWarnings);
-      }
-
+      getMarkerDistance();
     } catch (error) {
       console.error('Error refreshing data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getMarkerDistance = useCallback(async () => {
+    if (userLocation.latitude && userLocation.longitude) {
+      const filteredFloodWatches = markers.floodwatches.filter(fw => {
+        const distance = getDistance(
+          { latitude: userLocation.latitude, longitude: userLocation.longitude },
+          { latitude: fw.coordinates.latitude, longitude: fw.coordinates.longitude }
+        );
+        return distance <= 3000;
+      });
+
+      const filteredSpecialWarnings = markers.specialWarnings.filter(sw => {
+        const distance = getDistance(
+          { latitude: userLocation.latitude, longitude: userLocation.longitude },
+          { latitude: sw.coordinates.latitude, longitude: sw.coordinates.longitude }
+        );
+        return distance <= 3000;
+      }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      setFilteredFloodWatches(filteredFloodWatches);
+      setFilteredSpecialWarnings(filteredSpecialWarnings);
     }
   }, [userLocation]);
 
   useEffect(() => {
     refreshData();
   }, []);
+  
+  useEffect(() => {
+    getMarkerDistance();
+  }, [userLocation]);
 
   const handlePress = useCallback((id) => {
     setRefreshKey((prev) => prev + 1);
