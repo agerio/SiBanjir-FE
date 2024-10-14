@@ -20,6 +20,9 @@ export interface Coordinates {
     coordinates: Coordinates;
     image_url: string;
     created_at: string;
+    profile_picture: string;
+    verified_count: number;
+    created_by: string;
   }
   
   export interface FriendLocation {

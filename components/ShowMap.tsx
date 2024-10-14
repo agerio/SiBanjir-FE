@@ -27,9 +27,10 @@ interface ShowMapProps {
   floodWatches: FloodWatch[];
   specialWarnings: SpecialWarning[];
   friendLocations: FriendLocation[];
+  onLocationChange: (location: { latitude: number; longitude: number }) => void;
 }
 
-const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWatches, specialWarnings, friendLocations }) => {
+const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWatches, specialWarnings, friendLocations, onLocationChange }) => {
   const mapRef = useRef<MapView | null>(null);
   const markersRef = useRef<Record<string, Marker | null>>({});
   const [mapState, setMapState] = useState<MapState>({
@@ -51,35 +52,30 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
     requestLocationPermission()
   }, []);
 
-  useEffect(() => {
-    // This will be triggered when the refreshKey changes
-    console.log('Refreshing map data...');
-
-    // Place the code that re-fetches or updates the map data here
-
-  }, [refreshKey]);
-
   // Handle granted permission
   useEffect(() => {
     if (!mapState.locationPermission) return;
-
+  
     const subscription = Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.High,
-        distanceInterval: 10
+        distanceInterval: 10,
       },
-      location => {
+      (location) => {
         const userLocation = {
           latitude: location.coords.latitude,
-          longitude: location.coords.longitude
+          longitude: location.coords.longitude,
         };
-        setMapState(prevState => ({
+        setMapState((prevState) => ({
           ...prevState,
           userLocation,
         }));
+  
+        // Pass user's location back to parent
+        onLocationChange(userLocation);
       }
     );
-
+  
     return () => {
       if (subscription && typeof subscription.remove === 'function') {
         subscription.remove();
@@ -120,7 +116,7 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
     if (initialLocation) {
       focusOnMarker(initialLocation);
     }
-  }, [initialLocation]);
+  }, [initialLocation, refreshKey]);
 
   // Function to focus on a marker by ID
   const focusOnMarker = (id: string) => {
@@ -221,14 +217,14 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
         customMapStyle={colorScheme === 'dark' ? darkMapStyle : []}
         style={styles.container}
       >
-        {/* Render Floodwatch Markers */}
-        {floodWatches.map(renderFloodWatchMarker)}
+        {/* Render FriendLocation Markers */}
+        {friendLocations.map(renderFriendLocation)}
 
         {/* Render SpecialWarning Markers */}
         {specialWarnings.map(renderSpecialWarningMarker)}
 
-        {/* Render FriendLocation Markers */}
-        {friendLocations.map(renderFriendLocation)}
+        {/* Render Floodwatch Markers */}
+        {floodWatches.map(renderFloodWatchMarker)}
       </MapView>
     </>
   );
