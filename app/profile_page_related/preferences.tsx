@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get("window");
 
-export default function PrivacySetting() {
+export default function Preferences() {
     const [isEnabled, setIsEnabled] = useState(false);
     const [loading, setLoading] = useState(false);
     const scrollY = useRef(new Animated.Value(0)).current;

@@ -82,6 +82,7 @@ export default function Profile() {
       <TouchableOpacity style={styles.signoutButton} onPress={handleSignout}>
         <Ionicons name="log-out" size={24} color="#ff5b5b" />
       </TouchableOpacity>
+      <Text style={styles.signOutText}>Sign Out</Text>
 
       <Animated.ScrollView
         onScroll={Animated.event(
@@ -100,8 +101,7 @@ export default function Profile() {
         </View>
 
         <MenuItem icon="person" title="Profile Setting" onPress={() => router.push('../profile_page_related/update_profile')} />
-        <MenuItem icon="notifications" title="Notification" onPress={() => router.push('../profile_page_related/notification_setting')} />
-        <MenuItem icon="lock-closed" title="Privacy Setting" onPress={() => router.push('../profile_page_related/privacy_setting')} />
+        <MenuItem icon="id-card" title="Preferences" onPress={() => router.push('../profile_page_related/preferences')} />
         <MenuItem icon="call" title="Contact Us" onPress={() => router.push('../profile_page_related/contactUs')} />
         <MenuItem icon="chatbubbles" title="FAQ" onPress={() => router.push('../profile_page_related/faq')} />
         <MenuItem icon="mail-open" title="Send Us Feedback" onPress={() => router.push('../profile_page_related/feedback')} />
@@ -144,21 +144,30 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 12,
   },
+  signOutText: {
+    position: "absolute",
+    top: 90, // Adjust this value based on your layout
+    right: 20,
+    color: "#ff5b5b",
+    fontSize: 14,
+    textAlign: "center",
+  },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-start",
     paddingVertical: 15,
-    paddingHorizontal: 20,
+    paddingHorizontal: 17,
     backgroundColor: "#2b2b4b",
     borderRadius: 10,
     width: "90%",
-    marginBottom: 15,
+    marginBottom: 10,
     marginHorizontal: 20,
   },
   menuItemText: {
     color: "#fff",
     fontSize: 18,
+    marginLeft: 7,
   },
   signoutButton: {
     position: "absolute",
