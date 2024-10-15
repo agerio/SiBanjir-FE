@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Animated } from 'react-native';
+import { SafeAreaView, View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Animated, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { API_URL, useAuth } from '@/context/GlobalContext';
@@ -43,6 +43,10 @@ export default function Group() {
         fetchFriends();
     }, [authState]);
 
+    const handleCall = (phoneNumber: string) => {
+        Linking.openURL(`tel:${phoneNumber}`);
+    };
+
     const renderItem = ({ item }: { item: Friend }) => (
         <View style={styles.friendItem}>
             {item.profile_picture ? (
@@ -55,10 +59,16 @@ export default function Group() {
                 <Text style={styles.friendPhone}>{item.telephone_number}</Text>
             </View>
             <TouchableOpacity
-                style={styles.viewLocButton}
+                style={styles.actionButton}
                 onPress={() => router.push({ pathname:'/', params: { initialLocation:item.username } })}
             >
                 <Text style={styles.buttonText}>View Loc</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={[styles.actionButton, styles.callButton]}
+                onPress={() => handleCall(item.telephone_number)}
+            >
+                <Text style={styles.buttonText}>Call</Text>
             </TouchableOpacity>
         </View>
     );
@@ -140,11 +150,15 @@ const styles = StyleSheet.create({
     friendPhone: {
         color: '#bbb',
     },
-    viewLocButton: {
+    actionButton: {
         backgroundColor: '#444',
-        paddingHorizontal: 15,
+        paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 8,
+        marginLeft: 5,
+    },
+    callButton: {
+        backgroundColor: '#4CAF50', // Green color for the call button
     },
     buttonText: {
         color: '#fff',

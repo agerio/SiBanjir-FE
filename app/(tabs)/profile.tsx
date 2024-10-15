@@ -17,7 +17,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 120,
+    paddingBottom: 100,
     paddingTop: 60, // Added to account for the logout button
   },
   profileSection: {
@@ -42,14 +42,12 @@ const styles = StyleSheet.create({
     width: imageSize,
     height: imageSize,
     borderRadius: imageSize / 2,
-    marginTop: 15
   },
   usernameText: {
     fontSize: 24,
     color: "#fff",
     fontWeight: "bold",
-    marginBottom: 10,
-    marginTop: 12
+    marginTop: 10
   },
   menuItem: {
     flexDirection: "row",
@@ -60,7 +58,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#2b2b4b",
     borderRadius: 10,
     width: "90%",
-    marginBottom: 15,
+    marginBottom: 10,
     marginLeft: 20,
     marginRight: 20
   },
@@ -82,10 +80,10 @@ const styles = StyleSheet.create({
   aboutText: {
     color: "#999",
     textAlign: "center",
-    marginTop: 50
+    marginTop: 20
   },
   bottomSpace: {
-    height: 100,
+    height: 50,
   },
 });
 
@@ -212,7 +210,10 @@ export default function Profile() {
         </TouchableOpacity>
 
         <Text style={styles.aboutText}>
-          The developer team of international students aims to help Australian communities facing flood challenges.
+          Emergency Contacts:{"\n"}
+          Call 000: Police, Fire, Ambulance (life-threatening){"\n"}
+          Call 132 500: SES (flood/storm damage){"\n\n"}
+          Tip: Stay informed and follow official advice.
         </Text>
         
         <View style={styles.bottomSpace} />
