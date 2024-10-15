@@ -23,6 +23,9 @@ export interface Coordinates {
     profile_picture: string;
     verified_count: number;
     created_by: string;
+    has_verified: boolean;
+    has_denied: boolean;
+    is_creator: boolean;
   }
   
   export interface FriendLocation {

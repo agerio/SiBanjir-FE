@@ -68,6 +68,9 @@ export const fetchSpecialWarnings = async (): Promise<SpecialWarning[]> => {
         profile_picture: warning.profile_picture,
         verified_count: warning.verified_by.length,
         created_by: warning.created_by,
+        has_verified: warning.has_verified,
+        has_denied: warning.has_denied,
+        is_creator: warning.is_creator,
       }));
   } catch (error) {
     console.error('Error fetching special warnings:', error);
