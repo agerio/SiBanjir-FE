@@ -22,6 +22,7 @@ export interface Coordinates {
     created_at: string;
     profile_picture: string;
     verified_count: number;
+    denied_count: number;
     created_by: string;
     has_verified: boolean;
     has_denied: boolean;
