@@ -296,8 +296,8 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
             !lastCheckedLocation ||
             getDistance(lastCheckedLocation, userLocation) > 50
           ) {
-            calculateDistance(userLocation, mapState.floodwatches, "govapi");
-            calculateDistance(userLocation, mapState.specialWarnings, "special");
+            calculateDistance(userLocation, floodWatches, "govapi");
+            calculateDistance(userLocation, specialWarnings, "special");
             lastCheckedLocation = userLocation;
           }
   
