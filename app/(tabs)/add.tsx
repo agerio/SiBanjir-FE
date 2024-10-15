@@ -1,21 +1,22 @@
-import React, { FC, useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Modal, ScrollView } from 'react-native';
-import { useAuth } from '@/context/GlobalContext'; // Assuming you have an auth context
+import React, { FC, useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Modal, Animated, Dimensions, Platform } from 'react-native';
+import { useAuth } from '@/context/GlobalContext';
 import * as ImagePicker from 'expo-image-picker';
-import * as Camera from 'expo-camera';
-import * as Location from 'expo-location'; // Import module for location
+import * as Location from 'expo-location';
 import { API_URL } from "@/context/GlobalContext";
+import Cloud from '../../components/Cloud';
+
+const { width, height } = Dimensions.get("window");
 
 const AddFloodWarning: FC = () => {
     const [description, setDescription] = useState('');
     const [photoState, setPhotoState] = useState<{ uri?: string }>({});
-    const [permissionStatus, requestPermission] = Camera.useCameraPermissions();
     const [modalVisible, setModalVisible] = useState(false);
-    const { authState } = useAuth(); // Get the authentication state (token)
+    const { authState } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [location, setLocation] = useState<{ lat: number; long: number } | null>(null); // Store location
+    const [location, setLocation] = useState<{ lat: number; long: number } | null>(null);
+    const scrollY = useRef(new Animated.Value(0)).current;
 
-    // Request permission and get user's location on component mount
     useEffect(() => {
         (async () => {
             let { status } = await Location.requestForegroundPermissionsAsync();
@@ -32,74 +33,75 @@ const AddFloodWarning: FC = () => {
         })();
     }, []);
 
-    // Function to handle image selection from the library
-    async function handleImageLibraryPress() {
+    const requestCameraPermission = useCallback(async () => {
+        if (Platform.OS !== 'web') {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission needed', 'Sorry, we need camera permissions to make this work!');
+                return false;
+            }
+        }
+        return true;
+    }, []);
+
+    const handleImageLibraryPress = useCallback(async () => {
         setModalVisible(false);
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [4, 3],
-            quality: 1,
+            quality: 0.8,
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             setPhotoState(result.assets[0]);
         }
-    }
+    }, []);
 
-    // Function to handle image capture from the camera
-    async function handleCameraPress() {
-        setModalVisible(false);
-        if (!permissionStatus || !permissionStatus.granted) {
-            const { granted } = await requestPermission();
-            if (!granted) return;
-        }
+    const handleCameraPress = useCallback(async () => {
+        setModalVisible(true);
+        const hasCameraPermission = await requestCameraPermission();
+        if (!hasCameraPermission) return;
 
         let result = await ImagePicker.launchCameraAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [4, 3],
-            quality: 1,
+            quality: 0.8,
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             setPhotoState(result.assets[0]);
+            setModalVisible(false);
         }
-    }
+    }, [requestCameraPermission]);
 
-    // Function to handle retaking the photo
-    function handleRetake() {
+    const handleRetake = useCallback(() => {
         setPhotoState({});
-    }
+    }, []);
 
-    // Reset form after submission
-    const resetForm = () => {
+    const resetForm = useCallback(() => {
         setDescription('');
         setPhotoState({});
         setLoading(false);
-    };
+    }, []);
 
-    // Function to submit the flood warning
-    const handleSubmit = async () => {
+    const handleSubmit = useCallback(async () => {
         if (!description || !photoState.uri || !location) {
             Alert.alert("Missing Fields", "Please provide a description, upload an image, and ensure location access.");
             return;
         }
 
         setLoading(true);
-        console.log('meow') 
-        console.log(photoState)
         try {
-            const response = await fetch(photoState.uri); // Fetch the image as a blob
-            const blob = await response.blob(); // Convert the response to a blob
+            const response = await fetch(photoState.uri);
+            const blob = await response.blob();
 
             let formData = new FormData();
-            formData.append('name', description); // Description becomes 'name' in the backend
-            formData.append('image', {uri:photoState.uri, type:'image/jpeg', name:'upload.jpeg'}); // Append blob with a filename
-            // formData.append('image', blob, 'flood_image.jpg'); // Append blob with a filename
-            formData.append('lat', location.lat.toString()); // Append latitude
-            formData.append('long', location.long.toString()); // Append longitude
-            console.log(formData)
+            formData.append('name', description);
+            formData.append('image', { uri: photoState.uri, type: 'image/jpeg', name: 'upload.jpeg' });
+            formData.append('lat', location.lat.toString());
+            formData.append('long', location.long.toString());
 
             const header = new Headers();
             header.append('Authorization', `Token ${authState?.token}`);
@@ -115,31 +117,39 @@ const AddFloodWarning: FC = () => {
 
             if (apiResponse.status === 201) {
                 Alert.alert('Success', 'Flood warning submitted successfully!');
-                resetForm();  // Reset the form on success
+                resetForm();
             } else {
-                Alert.alert('Error', result.message || 'An error occurred while submitting.');
+                throw new Error(result.message || 'An error occurred while submitting.');
             }
         } catch (error) {
-            console.error(error)
-            Alert.alert('Error', 'Failed to submit the flood warning.');
+            console.error(error);
+            Alert.alert('Error', error instanceof Error ? error.message : 'Failed to submit the flood warning.');
         } finally {
             setLoading(false);
         }
-    };
+    }, [description, photoState.uri, location, authState?.token, resetForm]);
 
-    function openModal() {
+    const openModal = useCallback(() => {
         setModalVisible(true);
-    }
+    }, []);
 
     return (
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
-            <View style={styles.container}>
+        <View style={styles.container}>
+            <Animated.ScrollView
+                contentContainerStyle={styles.scrollContent}
+                onScroll={Animated.event(
+                    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                    { useNativeDriver: false }
+                )}
+                scrollEventThrottle={16}
+            >
                 <Text style={styles.label}>Description</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="Enter description"
                     value={description}
                     onChangeText={setDescription}
+                    placeholderTextColor="#999"
                 />
 
                 <TouchableOpacity style={styles.uploadBox} onPress={openModal}>
@@ -157,51 +167,58 @@ const AddFloodWarning: FC = () => {
                         <TouchableOpacity style={styles.actionButton} onPress={handleRetake}>
                             <Text style={styles.actionButtonText}>Retake</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                            <Text style={styles.submitButtonText}>SUBMIT</Text>
+                        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
+                            <Text style={styles.submitButtonText}>{loading ? 'SUBMITTING...' : 'SUBMIT'}</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
-                    <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                        <Text style={styles.submitButtonText}>SUBMIT</Text>
+                    <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
+                        <Text style={styles.submitButtonText}>{loading ? 'SUBMITTING...' : 'SUBMIT'}</Text>
                     </TouchableOpacity>
                 )}
 
-                <Modal
-                    animationType="slide"
-                    transparent={true}
-                    visible={modalVisible}
-                    onRequestClose={() => setModalVisible(false)}
-                >
-                    <View style={[styles.container, { justifyContent: 'center' }]}>
-                        <View style={styles.modalView}>
-                            <TouchableOpacity style={styles.modalButton} onPress={handleCameraPress}>
-                                <Text style={styles.modalButtonText}>Capture Image</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.modalButton} onPress={handleImageLibraryPress}>
-                                <Text style={styles.modalButtonText}>Upload from Library</Text>
-                            </TouchableOpacity>
-                        </View>
+                <View style={styles.bottomSpace} />
+            </Animated.ScrollView>
+
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={[styles.container, { justifyContent: 'center' }]}>
+                    <View style={styles.modalView}>
+                        <TouchableOpacity style={styles.modalButton} onPress={handleCameraPress}>
+                            <Text style={styles.modalButtonText}>Capture Image</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.modalButton} onPress={handleImageLibraryPress}>
+                            <Text style={styles.modalButtonText}>Upload from Library</Text>
+                        </TouchableOpacity>
                     </View>
-                </Modal>
-            </View>
-        </ScrollView>
+                </View>
+            </Modal>
+
+            <Cloud scrollY={scrollY} orientation="left" />
+            <Cloud scrollY={scrollY} orientation="right" />
+        </View>
     );
 };
-
-export default AddFloodWarning;
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
-        justifyContent: 'center',
         backgroundColor: '#1D1D2E',
+    },
+    scrollContent: {
+        flexGrow: 1,
+        padding: 20,
+        paddingBottom: 120,
     },
     label: {
         fontSize: 18,
         color: '#fff',
         marginBottom: 10,
+        marginTop: 100,
     },
     input: {
         backgroundColor: '#333',
@@ -209,6 +226,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 10,
         marginBottom: 20,
+        marginTop: 10
     },
     uploadBox: {
         width: '100%',
@@ -218,6 +236,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 20,
+        marginTop: 5,
     },
     photoImage: {
         width: '100%',
@@ -247,7 +266,7 @@ const styles = StyleSheet.create({
         padding: 15,
         borderRadius: 10,
         alignItems: 'center',
-        marginTop: 20,
+        marginTop: 15,
     },
     submitButtonText: {
         color: '#fff',
@@ -276,5 +295,11 @@ const styles = StyleSheet.create({
         fontSize: 14,
         textAlign: 'center',
         marginBottom: 10,
+        marginTop: 15,
+    },
+    bottomSpace: {
+        height: 100,
     },
 });
+
+export default AddFloodWarning;
