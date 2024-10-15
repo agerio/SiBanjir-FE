@@ -82,12 +82,12 @@ export default function ContactUs() {
 
                 <View style={styles.contactItem}>
                     <FontAwesome name="envelope" size={24} color="#fff" />
-                    <Text style={styles.contactText}>grandsarah@gmail.com</Text>
+                    <Text style={styles.contactText}>dekoderteam@gmail.com</Text>
                 </View>
 
                 <View style={styles.contactItem}>
                     <FontAwesome name="paper-plane" size={24} color="#fff" />
-                    <Text style={styles.contactText}>id: grandsarah14</Text>
+                    <Text style={styles.contactText}>id: dekoder_team</Text>
                 </View>
 
                 <Text style={styles.attentionText}>

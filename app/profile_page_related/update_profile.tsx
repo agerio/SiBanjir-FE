@@ -63,12 +63,11 @@ const styles = StyleSheet.create({
   passwordSection: {
     width: "100%",
     paddingHorizontal: 10,
-    marginTop: 20,
+    marginTop: 5,
   },
   dashedLine: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderStyle: "dashed",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
     marginVertical: 10,
     marginBottom: 20,
   },
@@ -78,6 +77,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: "center",
+    marginBottom: 25,
   },
   loadingContainer: {
     flex: 1,
