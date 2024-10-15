@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, StyleSheet, View, Image, TouchableOpacity, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -12,7 +12,7 @@ import { getDistance } from "geolib";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { Markers, FloodWatch, SpecialWarning } from "@/types/Marker";
 import { fetchAllowLocationSharing, fetchFloodwatches, fetchSpecialWarnings, fetchFriendLocation } from '@/api/marker';
-import { API_URL } from "@/context/GlobalContext";
+import { API_URL, VERIFY_MINIMUM_RADIUS } from "@/context/GlobalContext";
 
 import RefreshButton from "@/components/RefreshButton";
 import ShowMap from "@/components/ShowMap";
@@ -42,6 +42,7 @@ export default function App() {
     friendLocation: [],
   });
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const snapPoints = useMemo(() => ['4%', '30%'], []);
 
   const refreshAllData = async () => {
     setLoading(true);
@@ -102,7 +103,7 @@ export default function App() {
             { latitude: sw.coordinates.latitude, longitude: sw.coordinates.longitude }
           ),
         }))
-        .filter(sw => sw.distance <= 1000)
+        .filter(sw => sw.distance <= VERIFY_MINIMUM_RADIUS)
         .sort((a, b) => a.distance - b.distance);
   
       setFilteredSpecialWarnings(filteredSpecialWarning);
@@ -144,6 +145,27 @@ export default function App() {
   useEffect(() => {
     setInitialLocation(params.initialLocation?.toString());
   }, [params.initialLocation]);
+
+  // Handle new special warning submission from add.tsx
+  useEffect(() => {
+    console.log(`addRefreshKey: ${params.addRefreshKey}`);
+    (async () => {
+      if (bottomSheetRef.current) {
+        bottomSheetRef.current?.snapToIndex(0);
+      }
+      await refreshSpecialWarning();
+      setRefreshKey((prev) => prev + 1);
+      setInitialLocation(params.mapFocusId?.toString());
+    })();
+
+  }, [params.addRefreshKey]);
+
+  // Handle friend location tracking from group.tsx
+  useEffect(() => {
+    console.log(`groupRefreshKey: ${params.groupRefreshKey}`);
+    setRefreshKey((prev) => prev + 1);
+    setInitialLocation(params.mapFocusId?.toString());
+  }, [params.groupRefreshKey]);
   
   useEffect(() => {
     getNearbyFloodWatches();
@@ -158,7 +180,7 @@ export default function App() {
     setInitialLocation(id)
 
     if (bottomSheetRef.current) {
-      bottomSheetRef.current?.snapToIndex(0);
+      bottomSheetRef.current?.snapToIndex(1);
     }
   }, []);
 
@@ -182,9 +204,9 @@ export default function App() {
 
         <BottomSheet
           ref={bottomSheetRef}
-          index={2}
+          snapPoints={snapPoints}
+          index={1}
           maxDynamicContentSize={screenHeight * 0.6}
-          snapPoints={['4%', '30%']}
           backgroundStyle={styles.bottomSheetBackground}
           handleStyle={{ height: 40 }}
           handleIndicatorStyle={{ backgroundColor: 'gray' }}

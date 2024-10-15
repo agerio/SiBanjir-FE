@@ -3,6 +3,7 @@ import { SafeAreaView, View, Text, StyleSheet, FlatList, Image, Alert, Touchable
 import * as Location from 'expo-location';
 import axios from 'axios';
 import { getDistance } from 'geolib';
+import { VERIFY_MINIMUM_RADIUS } from '@/context/GlobalContext';
 
 const API_URL = 'https://si-banjir-be.vercel.app/api/specialwarning/warnings';
 
@@ -85,7 +86,7 @@ export default function SpecialWarningRequest() {
           distance, // distance in meters
         };
       })
-      .filter((warning) => warning.distance <= 100 && !verifiedWarnings.has(warning.id));
+      .filter((warning) => warning.distance <= VERIFY_MINIMUM_RADIUS && !verifiedWarnings.has(warning.id));
   };
 
   const nearbyWarnings = filterWarningsByDistance();
@@ -145,7 +146,7 @@ export default function SpecialWarningRequest() {
         />
       ) : (
         <View style={styles.noWarnings}>
-          <Text style={styles.noWarningsText}>No special warnings nearby within 100 meters.</Text>
+          <Text style={styles.noWarningsText}>{`No special warnings nearby within ${VERIFY_MINIMUM_RADIUS} meters.`}</Text>
         </View>
       )}
     </SafeAreaView>
