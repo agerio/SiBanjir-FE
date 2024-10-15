@@ -12,7 +12,7 @@ import { getDistance } from "geolib";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { Markers, FloodWatch, SpecialWarning } from "@/types/Marker";
 import { fetchAllowLocationSharing, fetchFloodwatches, fetchSpecialWarnings, fetchFriendLocation } from '@/api/marker';
-import { API_URL } from "@/context/GlobalContext";
+import { API_URL, VERIFY_MINIMUM_RADIUS } from "@/context/GlobalContext";
 
 import RefreshButton from "@/components/RefreshButton";
 import ShowMap from "@/components/ShowMap";
@@ -102,7 +102,7 @@ export default function App() {
             { latitude: sw.coordinates.latitude, longitude: sw.coordinates.longitude }
           ),
         }))
-        .filter(sw => sw.distance <= 1000)
+        .filter(sw => sw.distance <= VERIFY_MINIMUM_RADIUS)
         .sort((a, b) => a.distance - b.distance);
   
       setFilteredSpecialWarnings(filteredSpecialWarning);
