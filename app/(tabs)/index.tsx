@@ -145,7 +145,7 @@ export default function App() {
     setInitialLocation(params.initialLocation?.toString());
   }, [params.initialLocation]);
 
-  // Handle new special warning submission
+  // Handle new special warning submission from add.tsx
   useEffect(() => {
     console.log(`addRefreshKey: ${params.addRefreshKey}`);
     (async () => {
@@ -158,6 +158,13 @@ export default function App() {
     })();
 
   }, [params.addRefreshKey]);
+
+  // Handle friend location tracking from group.tsx
+  useEffect(() => {
+    console.log(`groupRefreshKey: ${params.groupRefreshKey}`);
+    setRefreshKey((prev) => prev + 1);
+    setInitialLocation(params.mapFocusId?.toString());
+  }, [params.groupRefreshKey]);
   
   useEffect(() => {
     getNearbyFloodWatches();

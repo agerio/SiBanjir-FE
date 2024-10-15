@@ -351,6 +351,7 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
   // Handle initial location
   useEffect(() => {
     if (initialLocation) {
+      console.log(`Focus on ${initialLocation}`)
       focusOnMarker(initialLocation);
     }
   }, [initialLocation, refreshKey]);

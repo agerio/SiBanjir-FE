@@ -13,8 +13,9 @@ type Friend = {
 };
 
 export default function Group() {
-    const [friends, setFriends] = useState<Friend[]>([]);
     const router = useRouter();
+    const [groupRefreshKey, setGroupRefreshKey] = useState(0);
+    const [friends, setFriends] = useState<Friend[]>([]);
     const { authState } = useAuth();
     const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -60,7 +61,16 @@ export default function Group() {
             </View>
             <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => router.push({ pathname:'/', params: { initialLocation:item.username } })}
+                onPress={() => {
+                    setGroupRefreshKey((prev) => prev + 1);
+                    router.push({ 
+                        pathname:'/', 
+                        params: {
+                            groupRefreshKey: `${groupRefreshKey}`,
+                            mapFocusId: item.username,
+                        }
+                    });
+                }}
             >
                 <Text style={styles.buttonText}>View Loc</Text>
             </TouchableOpacity>
