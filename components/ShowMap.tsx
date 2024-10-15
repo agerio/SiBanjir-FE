@@ -453,6 +453,7 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
         <View style={styles.friendMarker}>
           <Image 
             style={{ width: '100%', height: '100%' }}
+            resizeMethod="resize"
             source={friendloc.image_url ? { uri: friendloc.image_url } : require('@/assets/images/default_icon.png')} />
         </View>
       </Marker>
@@ -700,10 +701,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   friendMarker: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 50,
+    height: 50,
     overflow: 'hidden',
+    resizeMode: 'center',
+    borderRadius: 25,
+    borderWidth: 4,
+    borderColor: "darkgreen",
   },
 });
 
