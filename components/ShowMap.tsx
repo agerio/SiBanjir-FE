@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { StyleSheet, Appearance, View, Text, Image, Dimensions, Button, ActivityIndicator, TouchableOpacity, Modal, ScrollView, TouchableWithoutFeedback } from "react-native";
+import { StyleSheet, Appearance, View, Text, Image, Dimensions, Platform, Button, ActivityIndicator, TouchableOpacity, Modal, ScrollView, TouchableWithoutFeedback } from "react-native";
 import MapView, { Circle, Marker, Callout, Region } from "react-native-maps";
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
@@ -10,7 +10,116 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { floodClassColor, floodWatchImage } from "@/constants/FloodWatch";
 import { FloodWatch, SpecialWarning, FriendLocation } from "@/types/Marker";
 import moment from 'moment';
+import { getDistance } from "geolib";
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import Constants from "expo-constants";
+import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 
+// Your usePushNotifications hook
+export const usePushNotifications = () => {
+  const router = useRouter();
+  const navigation = useNavigation();
+
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldPlaySound: false,
+      shouldShowAlert: true,
+      shouldSetBadge: false,
+    }),
+  });
+
+  const [expoPushToken, setExpoPushToken] = useState<string | undefined>(
+    undefined
+  ); // Added type
+  const [notification, setNotification] = useState<
+    Notifications.Notification | undefined
+  >(undefined); // Added type
+
+  const notificationListener = useRef<any>();
+  const responseListener = useRef<any>();
+
+  async function registerForPushNotificationsAsync() {
+    let token;
+    if (Device.isDevice) {
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+  
+      if (existingStatus !== "granted") {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== "granted") {
+        alert("Failed to get push token for push notification");
+        return;
+      }
+  
+      // Ensure the projectId is a valid GUID
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      if (!projectId || projectId === "your-fallback-project-id") {
+        return;
+      }
+  
+      token = (
+        await Notifications.getExpoPushTokenAsync({
+          projectId,
+        })
+      ).data;
+    } else {
+      alert("Must be using a physical device for Push notifications");
+    }
+  
+    if (Platform.OS === "android") {
+      Notifications.setNotificationChannelAsync("default", {
+        name: "default",
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#FF231F7C",
+      });
+    }
+  
+    return token;
+  }
+  
+
+  useEffect(() => {
+    registerForPushNotificationsAsync().then((token) => {
+      setExpoPushToken(token);
+    });
+
+    notificationListener.current =
+      Notifications.addNotificationReceivedListener((notification) => {
+        setNotification(notification);
+      });
+
+    responseListener.current =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        const { type } = response.notification.request.content.data as {
+          type: string;
+        };
+
+        // Navigate to the confirmation screen if it's a special warning
+        if (type === "special") {
+          router.push("../notif_related/SpecialWarningRequest");
+        }
+      });
+
+    return () => {
+      Notifications.removeNotificationSubscription(
+        notificationListener.current
+      );
+      Notifications.removeNotificationSubscription(responseListener.current);
+    };
+  }, []);
+
+  return {
+    expoPushToken,
+    notification,
+  };
+};
+  
 const colorScheme = Appearance.getColorScheme();
 const screenWidth = Dimensions.get("window").width;
 
@@ -32,6 +141,7 @@ interface ShowMapProps {
 }
 
 const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWatches, specialWarnings, friendLocations, onLocationChange }) => {
+  const { expoPushToken, notification } = usePushNotifications();
   const mapRef = useRef<MapView | null>(null);
   const markersRef = useRef<Record<string, Marker | null>>({});
   const [mapState, setMapState] = useState<MapState>({
@@ -41,6 +151,90 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
       longitude: 153.0954163,
     },
   });
+    
+  const notifiedFloodsRef = useRef<Set<string>>(new Set());
+  const lastNotificationTimeRef = useRef<Record<string, number>>({});
+
+  const colorScheme = Appearance.getColorScheme();
+  const screenWidth = Dimensions.get("window").width;
+        
+  const showNotification = (
+    floodwatchName: string | undefined, // floodwatchName can be undefined
+    distance: number,
+    type: string
+  ) => {
+    // If floodwatchName is undefined for a special warning, use 'description' instead
+    if (!floodwatchName && type === 'special') {
+      floodwatchName = 'Special Warning'; // You can provide a fallback name here or skip if no description
+    }
+  
+    if (!floodwatchName) {
+      console.warn("Skipping notification because floodwatchName is undefined.");
+      return;
+    }
+  
+    const notificationKey = `${floodwatchName}_${type}`;
+    const currentTime = Date.now();
+  
+    // Check if this flood has been notified in the last 15 minutes
+    if (
+      !notifiedFloodsRef.current.has(notificationKey) ||
+      currentTime - lastNotificationTimeRef.current[notificationKey] >
+        15 * 60 * 1000
+    ) {
+      let title, body;
+  
+      if (type === "govapi") {
+        title = "Flood Warning Nearby!";
+        body = `You are within ${distance} meters of the flood warning: ${floodwatchName}`;
+      } else if (type === "special") {
+        title = "Special Warning Nearby!";
+        body = `Special alert: ${floodwatchName} within ${distance} meters. Confirm if this is accurate.`;
+      }
+  
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          data: { floodwatchName, distance, type }, 
+          sound: true,
+        },
+        trigger: { seconds: 1 },
+      })
+        .then(() => {
+          // Notification successfully scheduled
+        })
+        .catch((error) => {
+          console.error("Error scheduling notification:", error);
+        });
+  
+      // Post the notification to the API
+      axios
+      .post(
+        `${API_URL}/notification/history`,
+        { name: floodwatchName},  // Add distance here
+        {
+          headers: {
+            "Content-Type": "application/json",
+          }
+        }
+      )
+      .then((response) => {
+        // Handle success response
+      })
+      .catch((error) => {
+        console.error(
+          "Error posting notification history:",
+          error.response?.data || error.message
+        ); // Log detailed error message
+      });
+  
+      // Update the notified floods set and last notification time
+      notifiedFloodsRef.current.add(notificationKey);
+      lastNotificationTimeRef.current[notificationKey] = currentTime;
+    }
+  };
+        
   const [isModalVisible, setModalVisible] = useState(false); // State for modal visibility
 
   const requestLocationPermission = async () => {
@@ -54,33 +248,74 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
     requestLocationPermission();
   }, []);
 
-  // Handle granted permission
+  // Handle location updates and notifications
   useEffect(() => {
     if (!mapState.locationPermission) return;
-    console.log("uwu")
-    const subscription = Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.High,
-        distanceInterval: 10,
-      },
-      (location) => {
-        const userLocation = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        };
-        setMapState((prevState) => ({
-          ...prevState,
-          userLocation,
-        }));
-
-        // Pass user's location back to parent
-        onLocationChange(userLocation);
-      }
-    );
-
+  
+    let lastCheckedLocation: Location.LocationObjectCoords | null = null;
+  
+    const calculateDistance = (
+      userLocation: Location.LocationObjectCoords,
+      floodwatches: any[],
+      type: string
+    ) => {
+      return floodwatches
+        .map((floodwatch) => {
+          const distance = getDistance(userLocation, floodwatch.coordinates);
+          const isNearby = distance <= 1000;
+  
+          if (isNearby) {
+            showNotification(floodwatch.name, distance, type);
+          }
+  
+          return {
+            ...floodwatch,
+            distance: {
+              metres: distance,
+              nearby: distance <= 100,
+            },
+          };
+        })
+        .sort((a, b) => a.distance.metres - b.distance.metres)[0];
+    };
+  
+    let subscription: Location.LocationSubscription | undefined;
+  
+    const startLocationTracking = async () => {
+      subscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Balanced,
+          distanceInterval: 100, // Only update if user has moved 100 meters
+          timeInterval: 60000, // Or every 60 seconds, whichever comes first
+        },
+        (location) => {
+          const userLocation = location.coords;
+  
+          // Only recalculate distances if the user has moved significantly
+          if (
+            !lastCheckedLocation ||
+            getDistance(lastCheckedLocation, userLocation) > 50
+          ) {
+            calculateDistance(userLocation, mapState.floodwatches, "govapi");
+            calculateDistance(userLocation, mapState.specialWarnings, "special");
+            lastCheckedLocation = userLocation;
+          }
+  
+          setMapState((prevState) => ({
+            ...prevState,
+            userLocation,
+          }));
+          
+          onLocationChange(userLocation);
+        }
+      );
+    };
+  
+    startLocationTracking();
+    
     return () => {
-      if (subscription && typeof subscription.remove === 'function') {
-        subscription.remove();
+      if (subscription) {
+        subscription.remove(); // This now works after awaiting subscription
       }
     };
   }, [mapState.locationPermission]);
