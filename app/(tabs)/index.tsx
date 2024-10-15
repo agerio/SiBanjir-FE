@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, StyleSheet, View, Image, TouchableOpacity, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -42,6 +42,7 @@ export default function App() {
     friendLocation: [],
   });
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const snapPoints = useMemo(() => ['4%', '30%'], []);
 
   const refreshAllData = async () => {
     setLoading(true);
@@ -150,7 +151,7 @@ export default function App() {
     console.log(`addRefreshKey: ${params.addRefreshKey}`);
     (async () => {
       if (bottomSheetRef.current) {
-        bottomSheetRef.current?.snapToIndex(1);
+        bottomSheetRef.current?.snapToIndex(0);
       }
       await refreshSpecialWarning();
       setRefreshKey((prev) => prev + 1);
@@ -203,9 +204,9 @@ export default function App() {
 
         <BottomSheet
           ref={bottomSheetRef}
+          snapPoints={snapPoints}
           index={1}
           maxDynamicContentSize={screenHeight * 0.6}
-          snapPoints={['4%', '30%']}
           backgroundStyle={styles.bottomSheetBackground}
           handleStyle={{ height: 40 }}
           handleIndicatorStyle={{ backgroundColor: 'gray' }}
