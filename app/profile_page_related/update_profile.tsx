@@ -43,13 +43,16 @@ const styles = StyleSheet.create({
   },
   usernameContainer: {
     width: "100%",
-    paddingHorizontal: 10,
+    paddingHorizontal: 20, // Increased padding
     marginBottom: 10,
   },
   label: {
     fontSize: 14,
     color: "#666",
     marginBottom: 5,
+    width: '95%', // Match input width
+    marginLeft: 'auto',
+    marginRight: 'auto',
   },
   input: {
     borderWidth: 1,
@@ -59,16 +62,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#fff",
     marginBottom: 10,
+    width: '95%',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    color: '#000',
   },
   passwordSection: {
     width: "100%",
-    paddingHorizontal: 10,
-    marginTop: 20,
+    paddingHorizontal: 20,
+    marginTop: 5,
   },
   dashedLine: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderStyle: "dashed",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
     marginVertical: 10,
     marginBottom: 20,
   },
@@ -78,6 +84,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: "center",
+    marginBottom: 25,
   },
   loadingContainer: {
     flex: 1,

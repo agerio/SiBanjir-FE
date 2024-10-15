@@ -107,7 +107,10 @@ export default function Profile() {
         <MenuItem icon="mail-open" title="Send Us Feedback" onPress={() => router.push('../profile_page_related/feedback')} />
 
         <Text style={styles.aboutText}>
-          Our developer team consists of international students that aims to help Australian communities face flood challenges!
+          Emergency Contacts:{"\n"}
+          Call 000: Police, Fire, Ambulance (life-threatening){"\n"}
+          Call 132 500: SES (flood/storm damage){"\n\n"}
+          Tip: Stay informed and follow official advice.
         </Text>
 
         <View style={styles.bottomSpace} />

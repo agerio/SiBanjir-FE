@@ -96,28 +96,29 @@ export default function AddFriendResult() {
         <SafeAreaView style={styles.container}>
             <Text style={styles.header}>Adding New Friend</Text>
             <Text style={styles.queryText}>Searched for: {params.searchQuery || 'N/A'}</Text>
-
-            {isLoading ? (
-                <Text style={styles.loadingText}>Loading...</Text>
-            ) : error ? (
-                <Text style={styles.errorText}>{error}</Text>
-            ) : userData ? (
-                <View style={styles.profileContainer}>
-                    {userData.username !== params.searchQuery && (
-                        <Text style={styles.warningText}>Note: Showing result for "{userData.username}"</Text>
-                    )}
-                    <Image 
-                        source={userData.profile_picture ? { uri: userData.profile_picture } : require('../../assets/images/user-icon.png')} 
-                        style={styles.profileImage}
-                    />
-                    <Text style={styles.friendName}>{userData.username}</Text>
-                    <TouchableOpacity style={styles.addButton} onPress={handleAddFriend}>
-                        <Text style={styles.buttonText}>Add Friend</Text>
-                    </TouchableOpacity>
-                </View>
-            ) : (
-                <Text style={styles.errorText}>No user data available</Text>
-            )}
+            <View style={styles.contentContainer}>
+                {isLoading ? (
+                    <Text style={styles.loadingText}>Loading...</Text>
+                ) : error ? (
+                    <Text style={styles.errorText}>{error}</Text>
+                ) : userData ? (
+                    <View style={styles.profileContainer}>
+                        {userData.username !== params.searchQuery && (
+                            <Text style={styles.warningText}>Note: Showing result for "{userData.username}"</Text>
+                        )}
+                        <Image 
+                            source={userData.profile_picture ? { uri: userData.profile_picture } : require('../../assets/images/user-icon.png')} 
+                            style={styles.profileImage}
+                        />
+                        <Text style={styles.friendName}>{userData.username}</Text>
+                        <TouchableOpacity style={styles.addButton} onPress={handleAddFriend}>
+                            <Text style={styles.buttonText}>Add Friend</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <Text style={styles.errorText}>No user data available</Text>
+                )}
+            </View>
         </SafeAreaView>
     );
 }
@@ -125,31 +126,39 @@ export default function AddFriendResult() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
         backgroundColor: '#1e1e30',
-        alignItems: 'center',
     },
     header: {
         fontSize: 24,
         fontWeight: 'bold',
         color: '#fff',
-        marginBottom: 10,
-        marginTop: 50,
+        marginTop: 10,
+        textAlign: 'center',
     },
     queryText: {
         fontSize: 16,
         color: '#fff',
-        marginBottom: 20,
+        marginBottom: 10,
+        marginTop: 10,
+        paddingHorizontal: 20,
+        textAlign: 'center',
+    },
+    contentContainer: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 20,
     },
     profileContainer: {
         alignItems: 'center',
-        marginBottom: 30,
     },
     profileImage: {
         width: 100,
         height: 100,
         borderRadius: 50,
         marginBottom: 10,
+        marginTop: 60,
     },
     friendName: {
         fontSize: 20,
@@ -173,10 +182,12 @@ const styles = StyleSheet.create({
     errorText: {
         color: 'red',
         fontSize: 18,
+        textAlign: 'center',
     },
     warningText: {
         color: 'yellow',
         fontSize: 16,
         marginBottom: 10,
+        textAlign: 'center',
     },
 });
