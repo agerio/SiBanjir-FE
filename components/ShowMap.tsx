@@ -429,9 +429,9 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
             </View>
             <View style={styles.verifDenyContainer}>
               <Text style={styles.verificationCount}>{warning.verified_count}</Text>
-              <Ionicons name="checkmark-circle" size={24} color="green" />
+              <Ionicons name={warning.has_verified ? "checkmark-circle" : "checkmark-circle-outline"}  size={24} color="green" />
               <Text style={styles.denialCount}>{warning.denied_count}</Text>
-              <Ionicons name="close-circle" size={24} color="crimson" />
+              <Ionicons name={warning.has_denied ? "close-circle" : "close-circle-outline"} size={24} color="crimson" />
             </View>
           </View>
         </View>
@@ -447,7 +447,7 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
         ref={ref => (markersRef.current[friendloc.id] = ref)}
         coordinate={friendloc.coordinates}
         title={`${friendloc.id}`}
-        description={`${friendloc.last_login}`}
+        description={`Last seen ${moment(friendloc.last_login).fromNow()}`}
       >
         <View style={styles.friendMarker}>
           <Image 
