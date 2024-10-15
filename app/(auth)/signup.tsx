@@ -1,6 +1,6 @@
 import React, { FC, useState } from 'react';
 import { router } from "expo-router";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '@/context/GlobalContext';
 
@@ -8,11 +8,15 @@ const Signup: FC = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [password2, setConfirmPassword] = useState('');
+    const [loading, setLoading] = useState(false); // Loading state
     const { onSignup } = useAuth();
     const navigation = useNavigation();
 
   const handleSignup = async () => {
+    setLoading(true); // Set loading to true when signup process starts
     const response = await onSignup!(username, password, password2);
+    setLoading(false); // Set loading to false when signup process ends
+
     if (response && response.error) {
       alert(response.msg);
     } else {
@@ -52,8 +56,16 @@ const Signup: FC = () => {
         value={password2}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleSignup}>
-        <Text style={styles.buttonText}>Sign up</Text>
+      <TouchableOpacity
+        style={[styles.button, loading && styles.buttonDisabled]} // Disable button when loading
+        onPress={handleSignup}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color="#fff" /> // Show spinner when loading
+        ) : (
+          <Text style={styles.buttonText}>Sign up</Text>
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -119,6 +131,9 @@ const styles = StyleSheet.create({
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 20,
+    },
+    buttonDisabled: {
+      backgroundColor: '#999', // Style for the button when disabled
     },
     buttonText: {
       color: '#fff',

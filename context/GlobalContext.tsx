@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import axiosInstance from '@/api/axiosInstance';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
@@ -59,15 +60,15 @@ export const AuthProvider = ({ children }: any) => {
 
     const signup = async (username: string, password: string, password2: string) => {
         try {
-            return await axios.post(`${API_URL}/user/register`, { username, password, password2 });
-        } catch (e) {
-            return { error: true, msg: (e as any).response.data };
+            return await axiosInstance.post(`${API_URL}/user/register`, { username, password, password2 });
+        } catch (error) {
+            return error;
         }
     };
 
     const signin = async (username: string, password: string) => {
         try {
-            const response = await axios.post(`${API_URL}/user/login`, { username, password });
+            const response = await axiosInstance.post('/user/login', { username, password });
             console.log("status: ",response.status)
 
             setAuthState({
@@ -78,8 +79,8 @@ export const AuthProvider = ({ children }: any) => {
             await SecureStore.setItemAsync(TOKEN_KEY, response.data.token);
 
             return response;
-        } catch (e) {
-            return { error: true, msg: (e as any).response?.data || (e as any).message };
+        } catch (error) {
+            return error;
         }
     };
 
