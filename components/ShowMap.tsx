@@ -409,7 +409,7 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
       coordinate={warning.coordinates}
       title="Special Warning"
     >
-      <Callout>
+      <Callout tooltip={true}>
         <View style={styles.calloutWrapper}>
           <WebView
             style={styles.image}
@@ -427,16 +427,15 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
               <Text style={styles.username}>{warning.created_by}</Text>
               <Text style={styles.createdAt}>{moment(warning.created_at).fromNow()}</Text>
             </View>
-            <View style={styles.buttonContainer}>
-            <TouchableOpacity onPress={() => {}} style={styles.iconCloseButton}>
-              <Ionicons name="close" size={24} color="white" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => {}} style={styles.iconCheckButton}>
-              <Ionicons name="checkmark" size={24} color="white" />
-            </TouchableOpacity>
+            <View style={styles.verifDenyContainer}>
+              <Text style={styles.verificationCount}>{warning.verified_count}</Text>
+              <Ionicons name="checkmark-circle" size={24} color="green" />
+              <Text style={styles.denialCount}>{warning.denied_count}</Text>
+              <Ionicons name="close-circle" size={24} color="crimson" />
             </View>
           </View>
         </View>
+        <View style={styles.triangle}/>
       </Callout>
     </Marker>
   );
@@ -535,6 +534,7 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#1e1e30",
   },
   modalOverlay: {
     flex: 1,
@@ -545,9 +545,8 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: '90%',
     maxHeight: '60%',
-    backgroundColor: 'white',
+    backgroundColor: '#2b2b4b',
     borderRadius: 10,
-    // padding: 20,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -555,7 +554,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#f1f1f1',
+    backgroundColor: '#1e1e30',
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
   },
@@ -563,6 +562,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#fff',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -580,14 +580,15 @@ const styles = StyleSheet.create({
   },
   legendTextContainer: {
     flex: 1,
-    paddingRight: 20
+    paddingRight: 20,
   },
   legendTitle: {
     fontWeight: 'bold',
+    color: '#fff',
   },
   legendDescription: {
     fontSize: 12,
-    color: 'gray',
+    color: '#999',
     textAlign: 'justify',
   },
   legendButton: {
@@ -596,16 +597,37 @@ const styles = StyleSheet.create({
     left: 10,
     backgroundColor: 'white',
     padding: 10,
-    borderRadius: 3,
+    borderRadius: 2,
     elevation: 5,
     opacity: 0.75,
   },
   legendButtonText: {
     fontWeight: 'bold',
+    color: '#fff',
   },
   calloutWrapper: {
+    backgroundColor: '#1e1e30',
     width: 0.8 * screenWidth,
-    padding: 10,
+    padding: 15,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    marginTop: 10,
+  },
+  triangle: {
+    width: 0,
+    height: 0,
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    borderTopWidth: 15,
+    borderTopColor: '#1e1e30',
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
   },
   image: {
     height: 0.45 * screenWidth,
@@ -615,7 +637,7 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 14,
     marginBottom: 10,
-    color: '#333',
+    color: '#fff',
   },
   metadataContainer: {
     flexDirection: 'row',
@@ -637,25 +659,41 @@ const styles = StyleSheet.create({
   username: {
     fontWeight: 'bold',
     fontSize: 16,
+    color: '#fff',
   },
   createdAt: {
     fontSize: 12,
-    color: '#666',
+    color: '#999',
   },
-  buttonContainer: {
+  verifDenyContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    marginTop: 10,
+  },
+  verificationCount: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: 'green',
+    marginRight: 3,
+  },
+  denialCount: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 5,
+    color: 'crimson',
+    marginRight: 3,
   },
   iconCloseButton: {
     marginLeft: 5,
-    backgroundColor: '#912424', // Change to your desired background color
+    backgroundColor: '#912424',
     padding: 5,
     borderRadius: 5,
     alignItems: 'center',
   },
   iconCheckButton: {
     marginLeft: 5,
-    backgroundColor: '#53964e', // Change to your desired background color
+    backgroundColor: '#53964e',
     padding: 5,
     borderRadius: 5,
     alignItems: 'center',
@@ -667,6 +705,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 });
+
 
 export default ShowMap;
 
@@ -936,7 +975,7 @@ const legendData = [
   {
     image: require('@/assets/images/special_warning.png'),
     title: "Special Warning",
-    description: "A user-reported flood warning. If you are withinn the area, you can verify or refuute the warning!"
+    description: "A user-reported flood warning. If you are within the area, you can verify or deny the warning!"
   },
   {
     image: floodWatchImage['unknown'],
