@@ -256,10 +256,10 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
   
     const calculateDistance = (
       userLocation: Location.LocationObjectCoords,
-      floodwatches: any[],
+      floodWatches: any[],
       type: string
     ) => {
-      return floodwatches
+      return floodWatches
         .map((floodwatch) => {
           const distance = getDistance(userLocation, floodwatch.coordinates);
           const isNearby = distance <= 1000;

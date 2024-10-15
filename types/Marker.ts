@@ -38,7 +38,7 @@ export interface Coordinates {
   }
   
   export interface Markers {
-    floodwatches: FloodWatch[];
+    floodWatches: FloodWatch[];
     specialWarnings: SpecialWarning[];
     friendLocation: FriendLocation[];
   }

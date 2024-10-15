@@ -1,52 +1,56 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Text, StyleSheet, View, Image, TouchableOpacity, Appearance, Dimensions, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from "expo-router";
-import ShowMap from "../../components/ShowMap";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Markers, FloodWatch, SpecialWarning } from "@/types/Marker";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { Text, StyleSheet, View, Image, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { fetchAllowLocationSharing, fetchFloodwatches, fetchSpecialWarnings, fetchFriendLocation } from '@/api/marker';
-import RefreshButton from "@/components/RefreshButton";
-import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
-import { getDistance } from "geolib";
 import moment from 'moment';
+import Ionicons from "@expo/vector-icons/Ionicons";
 
-const colorScheme = Appearance.getColorScheme();
-const screenWidth = Dimensions.get("window").width;
+import { useLocalSearchParams } from "expo-router";
+import { getDistance } from "geolib";
+
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { Markers, FloodWatch, SpecialWarning } from "@/types/Marker";
+import { fetchAllowLocationSharing, fetchFloodwatches, fetchSpecialWarnings, fetchFriendLocation } from '@/api/marker';
+
+import RefreshButton from "@/components/RefreshButton";
+import ShowMap from "@/components/ShowMap";
+
+
 const screenHeight = Dimensions.get("window").height;
 
+export interface FloodWatchWithDistance extends FloodWatch {
+  distance: number;
+}
+
+export interface SpecialWarningWithDistance extends SpecialWarning {
+  distance: number;
+}
+
 export default function App() {
-  const bottomSheetRef = useRef(null);
-  
-  const [userLocation, setUserLocation] = useState({ latitude: 0, longitude: 0 });
-  const [filteredFloodWatches, setFilteredFloodWatches] = useState<FloodWatch[]>([]);
-  const [filteredSpecialWarnings, setFilteredSpecialWarnings] = useState<SpecialWarning[]>([]);
-
   const params = useLocalSearchParams();
-  const [initialLocation, setInitialLocation] = useState(params.initialLocation?.toString());
-  useEffect(() => {
-    setInitialLocation(params.initialLocation?.toString());
-  }, [params.initialLocation]);
-
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [initialLocation, setInitialLocation] = useState(params.initialLocation?.toString());
+  const [userLocation, setUserLocation] = useState({ latitude: 0, longitude: 0 });
+  const [filteredFloodWatches, setFilteredFloodWatches] = useState<FloodWatchWithDistance[]>([]);
+  const [filteredSpecialWarnings, setFilteredSpecialWarnings] = useState<SpecialWarningWithDistance[]>([]);
   const [markers, setMarkers] = useState<Markers>({
-    floodwatches: [],
+    floodWatches: [],
     specialWarnings: [],
     friendLocation: [],
   });
+  const bottomSheetRef = useRef<BottomSheet>(null);
 
-  const refreshData = async () => {
+  const refreshAllData = async () => {
     setLoading(true);
     try {
       await fetchAllowLocationSharing();
-      const [floodwatches, specialWarnings, friendLocation] = await Promise.all([
+      const [floodWatches, specialWarnings, friendLocation] = await Promise.all([
         fetchFloodwatches(),
         fetchSpecialWarnings(),
         fetchFriendLocation(),
       ]);
-      setMarkers({ floodwatches, specialWarnings, friendLocation });
+      setMarkers({ floodWatches, specialWarnings, friendLocation });
     } catch (error) {
       console.error('Error refreshing data:', error);
     } finally {
@@ -54,43 +58,61 @@ export default function App() {
     }
   };
 
-  const getMarkerDistance = async () => {
+  const getNearbyFloodWatches = async () => {
     if (userLocation.latitude && userLocation.longitude) {
-      const filteredFloodWatches = markers.floodwatches.filter(fw => {
-        const distance = getDistance(
-          { latitude: userLocation.latitude, longitude: userLocation.longitude },
-          { latitude: fw.coordinates.latitude, longitude: fw.coordinates.longitude }
-        );
-        return distance <= 3000;
-      });
-      
-      const filteredSpecialWarnings = markers.specialWarnings.filter(sw => {
-        const distance = getDistance(
-          { latitude: userLocation.latitude, longitude: userLocation.longitude },
-          { latitude: sw.coordinates.latitude, longitude: sw.coordinates.longitude }
-        );
-        return distance <= 3000;
-      }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      
+      const filteredFloodWatches: FloodWatchWithDistance[] = markers.floodWatches
+        .map((fw) => ({
+          ...fw,
+          distance: getDistance(
+            { latitude: userLocation.latitude, longitude: userLocation.longitude },
+            { latitude: fw.coordinates.latitude, longitude: fw.coordinates.longitude }
+          ),
+        }))
+        .filter(fw => fw.distance <= 3000);
+  
       setFilteredFloodWatches(filteredFloodWatches);
-      setFilteredSpecialWarnings(filteredSpecialWarnings);
+    }
+  };
+  
+  const getNearbySpecialWarning = async () => {
+    if (userLocation.latitude && userLocation.longitude) {
+      console.log(markers.specialWarnings.length)
+      const filteredSpecialWarning: SpecialWarningWithDistance[] = markers.specialWarnings
+        .map((sw) => ({
+          ...sw,
+          distance: getDistance(
+            { latitude: userLocation.latitude, longitude: userLocation.longitude },
+            { latitude: sw.coordinates.latitude, longitude: sw.coordinates.longitude }
+          ),
+        }))
+        .filter(sw => sw.distance <= 1000);
+  
+      setFilteredSpecialWarnings(filteredSpecialWarning);
     }
   };
 
   useEffect(() => {
-    refreshData();
+    refreshAllData();
   }, []);
+
+  useEffect(() => {
+    setInitialLocation(params.initialLocation?.toString());
+  }, [params.initialLocation]);
   
   useEffect(() => {
-    getMarkerDistance();
-  }, [userLocation, markers]);
+    getNearbyFloodWatches();
+  }, [userLocation, markers.floodWatches]);
+  
+  useEffect(() => {
+    getNearbySpecialWarning();
+  }, [userLocation, markers.specialWarnings]);
 
-  const handlePress = useCallback((id) => {
+  const handlePress = useCallback((id: string) => {
     setRefreshKey((prev) => prev + 1);
     setInitialLocation(id)
 
     if (bottomSheetRef.current) {
-      bottomSheetRef.current.snapToIndex(0);
+      bottomSheetRef.current?.snapToIndex(0);
     }
   }, []);
 
@@ -99,14 +121,14 @@ export default function App() {
       <SafeAreaView style={styles.container}>
         <View>
           <View style={styles.buttonContainer}>
-            <RefreshButton onRefresh={refreshData} loading={loading} />
+            <RefreshButton onRefresh={refreshAllData} loading={loading} />
           </View>
         </View>
 
         <ShowMap
           initialLocation={initialLocation}
           refreshKey={refreshKey}
-          floodWatches={markers.floodwatches}
+          floodWatches={markers.floodWatches}
           specialWarnings={markers.specialWarnings}
           friendLocations={markers.friendLocation}
           onLocationChange={setUserLocation}
@@ -245,8 +267,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   warningImage: {
-    width: '40%', // 6:4 ratio, with left side taking 40%
-    height: 80, // Fixed height for the image
+    width: '40%',
+    height: 80,
     borderRadius: 10,
   },
   warningText: {
@@ -256,13 +278,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   warningTextContainer: {
-    width: '60%', // 6:4 ratio, with right side taking 60%
+    width: '60%',
     paddingLeft: 10,
     justifyContent: 'space-between',
   },
   metadataContainer: {
     flexDirection: 'row',
-    // justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 5,
   },

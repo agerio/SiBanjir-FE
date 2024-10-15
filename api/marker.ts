@@ -46,7 +46,7 @@ export const fetchFloodwatches = async (): Promise<FloodWatch[]> => {
         obs_time: floodwatch.obs_time,
       }));
   } catch (error) {
-    console.error('Error fetching floodwatches:', error);
+    console.error('Error fetching floodWatches:', error);
     throw error;
   }
 };
