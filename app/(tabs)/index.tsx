@@ -144,6 +144,20 @@ export default function App() {
   useEffect(() => {
     setInitialLocation(params.initialLocation?.toString());
   }, [params.initialLocation]);
+
+  // Handle new special warning submission
+  useEffect(() => {
+    console.log(`addRefreshKey: ${params.addRefreshKey}`);
+    (async () => {
+      if (bottomSheetRef.current) {
+        bottomSheetRef.current?.snapToIndex(1);
+      }
+      await refreshSpecialWarning();
+      setRefreshKey((prev) => prev + 1);
+      setInitialLocation(params.mapFocusId?.toString());
+    })();
+
+  }, [params.addRefreshKey]);
   
   useEffect(() => {
     getNearbyFloodWatches();
@@ -158,7 +172,7 @@ export default function App() {
     setInitialLocation(id)
 
     if (bottomSheetRef.current) {
-      bottomSheetRef.current?.snapToIndex(0);
+      bottomSheetRef.current?.snapToIndex(1);
     }
   }, []);
 
@@ -182,7 +196,7 @@ export default function App() {
 
         <BottomSheet
           ref={bottomSheetRef}
-          index={2}
+          index={1}
           maxDynamicContentSize={screenHeight * 0.6}
           snapPoints={['4%', '30%']}
           backgroundStyle={styles.bottomSheetBackground}

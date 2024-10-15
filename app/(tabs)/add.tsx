@@ -5,10 +5,14 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { API_URL } from "@/context/GlobalContext";
 import Cloud from '../../components/Cloud';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
 
 const AddFloodWarning: FC = () => {
+    const router = useRouter();
+    const [addRefreshKey, setAddRefreshKey] = useState(0);
+
     const [description, setDescription] = useState('');
     const [photoState, setPhotoState] = useState<{ uri?: string }>({});
     const [modalVisible, setModalVisible] = useState(false);
@@ -118,6 +122,15 @@ const AddFloodWarning: FC = () => {
             if (apiResponse.status === 201) {
                 Alert.alert('Success', 'Flood warning submitted successfully!');
                 resetForm();
+
+                setAddRefreshKey((prev) => prev + 1);
+                router.push({
+                    pathname:'/',
+                    params: {
+                        addRefreshKey: `${addRefreshKey}`,
+                        mapFocusId: result.id,
+                    }
+                });
             } else {
                 throw new Error(result.message || 'An error occurred while submitting.');
             }
