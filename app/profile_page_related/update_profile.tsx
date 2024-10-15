@@ -43,13 +43,16 @@ const styles = StyleSheet.create({
   },
   usernameContainer: {
     width: "100%",
-    paddingHorizontal: 10,
+    paddingHorizontal: 20, // Increased padding
     marginBottom: 10,
   },
   label: {
     fontSize: 14,
     color: "#666",
     marginBottom: 5,
+    width: '95%', // Match input width
+    marginLeft: 'auto',
+    marginRight: 'auto',
   },
   input: {
     borderWidth: 1,
@@ -59,10 +62,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#fff",
     marginBottom: 10,
+    width: '95%',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    color: '#000',
   },
   passwordSection: {
     width: "100%",
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
     marginTop: 5,
   },
   dashedLine: {
