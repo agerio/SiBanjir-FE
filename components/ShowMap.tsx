@@ -16,6 +16,7 @@ import * as Device from "expo-device";
 import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
+import { renderFloodWatchMarkers } from "./FloodWatchMarker";
 
 // Your usePushNotifications hook
 export const usePushNotifications = () => {
@@ -122,6 +123,7 @@ export const usePushNotifications = () => {
   
 const colorScheme = Appearance.getColorScheme();
 const screenWidth = Dimensions.get("window").width;
+console.log(screenWidth)
 
 interface MapState {
   locationPermission: boolean;
@@ -382,21 +384,41 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
   };
 
   // Flood Watch renderer
-  const renderFloodWatchMarker = (floodWatch: FloodWatch) => (
-    <React.Fragment key={floodWatch.id}>
+  const renderFloodWatchMarker = (fw: FloodWatch) => (
+    <React.Fragment key={fw.id}>
       <Marker
-        ref={ref => (markersRef.current[floodWatch.id] = ref)}
-        image={floodWatchImage[floodWatch.class]}
-        coordinate={floodWatch.coordinates}
-        title={floodWatch.name}
-        description={`${floodWatch.class.toUpperCase()}${floodWatch.tendency ? ` (${floodWatch.tendency})` : ''}`}
-      />
+        ref={ref => (markersRef.current[fw.id] = ref)}
+        image={floodWatchImage[fw.class]}
+        key={fw.id}
+        coordinate={fw.coordinates}
+        title={fw.name}
+      >
+        <Callout tooltip={true}>
+          <View style={styles.calloutWrapper}>
+            <WebView
+              style={styles.floodWatchImage}
+              source={{ uri: `http://www.bom.gov.au/fwo/IDQ${fw.area_id}/IDQ${fw.area_id}.${String(fw.id).padStart(6, '0')}.png`}}
+            />
+            <Text style={styles.description}>{fw.name}</Text>
+            <View style={styles.metadataContainer}>
+              <View style={styles.profilePicture}>
+                <Text>{fw.class}</Text>
+              </View>
+              <View style={styles.metadataTextContainer}>
+                <Text style={styles.username}>{fw.hgt}</Text>
+                <Text style={styles.createdAt}>{fw.obs_time}</Text>
+              </View>
+            </View>
+          </View>
+          <View style={styles.triangle}/>
+        </Callout>
+      </Marker>
       <Circle
-        center={floodWatch.coordinates}
+        center={fw.coordinates}
         radius={500}
         strokeWidth={0}
-        strokeColor={floodClassColor[floodWatch.class]}
-        fillColor={`${floodClassColor[floodWatch.class]}30`}
+        strokeColor={floodClassColor[fw.class]}
+        fillColor={`${floodClassColor[fw.class]}30`}
       />
     </React.Fragment>
   );
@@ -517,7 +539,8 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
         {specialWarnings.map(renderSpecialWarningMarker)}
 
         {/* Render Floodwatch Markers */}
-        {floodWatches.map(renderFloodWatchMarker)}
+        {/* {floodWatches.map(renderFloodWatchMarker)} */}
+        {renderFloodWatchMarkers(floodWatches, floodWatchImage, floodClassColor)}
       </MapView>
       
       {/* Legends Button */}
@@ -633,6 +656,11 @@ const styles = StyleSheet.create({
   },
   image: {
     height: 0.45 * screenWidth,
+    width: '100%',
+    marginBottom: 5,
+  },
+  floodWatchImage: {
+    height: 0.33 * screenWidth,
     width: '100%',
     marginBottom: 5,
   },
