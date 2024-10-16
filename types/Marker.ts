@@ -7,7 +7,7 @@ export interface Coordinates {
     id: string;
     name: string;
     coordinates: Coordinates;
-    hgt: string;
+    hgt: number;
     class: string;
     obs_time: string;
     area_id: number;
