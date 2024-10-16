@@ -39,11 +39,10 @@ export const fetchFloodwatches = async (): Promise<FloodWatch[]> => {
           latitude: parseFloat(floodwatch.lat),
           longitude: parseFloat(floodwatch.long),
         },
-        xingname: floodwatch.xingname,
-        class: floodwatch.class.toLowerCase(),
-        tendency: floodwatch.tendency,
         hgt: floodwatch.hgt,
+        class: floodwatch.classif.toLowerCase(),
         obs_time: floodwatch.obs_time,
+        area_id: floodwatch.area_id,
       }));
   } catch (error) {
     console.error('Error fetching floodWatches:', error);

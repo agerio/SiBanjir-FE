@@ -16,6 +16,7 @@ import * as Device from "expo-device";
 import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
+import FloodWatchMarker from "./FloodWatchMarker";
 
 // Your usePushNotifications hook
 export const usePushNotifications = () => {
@@ -381,25 +382,6 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
     }
   };
 
-  // Flood Watch renderer
-  const renderFloodWatchMarker = (floodWatch: FloodWatch) => (
-    <React.Fragment key={floodWatch.id}>
-      <Marker
-        ref={ref => (markersRef.current[floodWatch.id] = ref)}
-        image={floodWatchImage[floodWatch.class]}
-        coordinate={floodWatch.coordinates}
-        title={floodWatch.name}
-        description={`${floodWatch.class.toUpperCase()}${floodWatch.tendency ? ` (${floodWatch.tendency})` : ''}`}
-      />
-      <Circle
-        center={floodWatch.coordinates}
-        radius={500}
-        strokeWidth={0}
-        strokeColor={floodClassColor[floodWatch.class]}
-        fillColor={`${floodClassColor[floodWatch.class]}30`}
-      />
-    </React.Fragment>
-  );
 
   // Special Warning renderer
   const renderSpecialWarningMarker = (warning: SpecialWarning) => (
@@ -517,7 +499,15 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
         {specialWarnings.map(renderSpecialWarningMarker)}
 
         {/* Render Floodwatch Markers */}
-        {floodWatches.map(renderFloodWatchMarker)}
+        {/* {floodWatches.map(renderFloodWatchMarker)} */}
+        {/* {renderFloodWatchMarkers(floodWatches, floodWatchImage, floodClassColor)} */}
+        {floodWatches.map(fw => (
+          <FloodWatchMarker
+            key={fw.id}
+            markerRef={ref => (markersRef.current[fw.id] = ref)}
+            floodWatch={fw}
+          />
+        ))}
       </MapView>
       
       {/* Legends Button */}
@@ -633,6 +623,11 @@ const styles = StyleSheet.create({
   },
   image: {
     height: 0.45 * screenWidth,
+    width: '100%',
+    marginBottom: 5,
+  },
+  floodWatchImage: {
+    height: 0.33 * screenWidth,
     width: '100%',
     marginBottom: 5,
   },

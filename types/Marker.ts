@@ -7,11 +7,10 @@ export interface Coordinates {
     id: string;
     name: string;
     coordinates: Coordinates;
-    xingname: string;
+    hgt: number;
     class: string;
-    tendency: string;
-    hgt: string;
     obs_time: string;
+    area_id: number;
   }
   
   export interface SpecialWarning {

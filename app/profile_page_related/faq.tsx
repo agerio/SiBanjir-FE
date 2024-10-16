@@ -9,8 +9,9 @@ const DropdownQuestion = ({ question, answer }) => {
     const toggleDropdown = () => {
       const finalValue = isOpen ? 0 : 150;
       setIsOpen(!isOpen);
-      Animated.spring(animatedHeight, {
+      Animated.timing(animatedHeight, {
         toValue: finalValue,
+        duration: 300,
         useNativeDriver: false,
       }).start();
     };
