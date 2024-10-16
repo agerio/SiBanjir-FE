@@ -27,21 +27,21 @@ const FloodWatchMarker = React.memo(({ fw, floodWatchImage, floodClassColor }) =
         {showCallout && (
           <Callout tooltip={true}>
             <View style={styles.calloutWrapper}>
+              <Text style={styles.fwName}>{fw.name}</Text>
               <WebView
                 style={styles.floodWatchImage}
                 source={{ uri: `http://www.bom.gov.au/fwo/IDQ${fw.area_id}/IDQ${fw.area_id}.${String(fw.id).padStart(6, '0')}.png`}}
               />
-              <Text style={styles.fwName}>{fw.name}</Text>
               <View style={styles.metadataContainer}>
-                <View style={styles.heightContainer}>
-                    <Text style={{fontSize: 24, color: 'white'}}>{fw.hgt.toFixed(2)}</Text>
-                    <Text style={{fontSize: 10, color: 'white', textAlign:'right'}}>meter</Text>
+                <View style={styles.hgtContainer}>
+                    <Text style={styles.heightText}>Height</Text>
+                    <Text style={styles.hgtText}>{fw.hgt.toFixed(2)}m</Text>
                 </View>
                 {/* <View style={styles.profilePicture}>
                 </View> */}
                 <View style={styles.metadataTextContainer}>
-                  <Text style={styles.username}>{fw.class.toUpperCase()}</Text>
-                  <Text style={styles.createdAt}>Last observed: {fw.obs_time}</Text>
+                  <Text style={styles.fwClass}>Class: {fw.class.toUpperCase()}</Text>
+                  <Text style={styles.fwObsTime}>Last observed: {fw.obs_time}</Text>
                 </View>
               </View>
             </View>
@@ -177,31 +177,55 @@ const styles = StyleSheet.create({
       marginBottom: 5,
     },
     floodWatchImage: {
-      height: 0.3 * screenWidth,
+      height: 0.33 * screenWidth,
       width: '100%',
-      marginBottom: 5,
+      marginBottom: 10,
     },
     fwName: {
       fontSize: 16,
-      fontWeight: 'semibold',
+      fontWeight: 'bold',
       marginBottom: 10,
       color: '#fff',
+      textAlign: 'center',
     },
     metadataContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-around',
+        justifyContent: 'space-between',
         // backgroundColor: 'blue',
     },
-    heightContainer: {
-        // alignItems: 'center',
+    hgtContainer: {
+        flex: 3,
+        alignItems: 'flex-end',
+        marginRight: 5,
+        // flexDirection: 'row',
         // backgroundColor: 'red',
     },
+    hgtText: {
+        fontSize: 24,
+        color: 'white', 
+        // backgroundColor: 'yellow'
+    },
+    heightText: {
+        fontSize: 10, 
+        color: 'white', 
+        // backgroundColor:'purple'
+    },
     metadataTextContainer: {
-      flex: 1,
+      flex: 5,
+    //   alignItems: 'center',
     //   marginRight: 5,
       marginLeft: 15,
     //   backgroundColor: 'green',
+    },
+    fwObsTime: {
+      fontSize: 12,
+      color: '#999',
+    },
+    fwClass: {
+      fontWeight: 'bold',
+      fontSize: 14,
+      color: '#fff',
     },
     profilePicture: {
       overflow: 'hidden',
@@ -209,15 +233,6 @@ const styles = StyleSheet.create({
       width: 30,
       height: 30,
       borderRadius: 15,
-    },
-    username: {
-      fontWeight: 'bold',
-      fontSize: 16,
-      color: '#fff',
-    },
-    createdAt: {
-      fontSize: 12,
-      color: '#999',
     },
     verifDenyContainer: {
       flexDirection: 'row',
