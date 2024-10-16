@@ -1,7 +1,7 @@
 export const floodClassColor: Record<string, string> = {
     "unknown": "#707070",
-    "below minor": "#007502",
-    "minor": "#29ccb9",
+    "below minor": "#29ccb9",
+    "minor": "#007502",
     "moderate": "#f0b01d",
     "major": "#c71c1c"
 };
