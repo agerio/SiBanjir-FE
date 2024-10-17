@@ -286,13 +286,12 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
       subscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
-          distanceInterval: 100, // Only update if user has moved 100 meters
-          timeInterval: 60000, // Or every 60 seconds, whichever comes first
+          distanceInterval: 100,
+          timeInterval: 60000,
         },
         (location) => {
           const userLocation = location.coords;
   
-          // Only recalculate distances if the user has moved significantly
           if (
             !lastCheckedLocation ||
             getDistance(lastCheckedLocation, userLocation) > 50
@@ -316,10 +315,10 @@ const ShowMap: React.FC<ShowMapProps> = ({ initialLocation, refreshKey, floodWat
     
     return () => {
       if (subscription) {
-        subscription.remove(); // This now works after awaiting subscription
+        subscription.remove();
       }
     };
-  }, [mapState.locationPermission]);
+  }, [mapState.locationPermission, floodWatches, specialWarnings]);
 
   // Handle location change
   const lastFetchRef = useRef(0);
