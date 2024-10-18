@@ -139,7 +139,7 @@ export default function NotificationPage() {
         style={styles.minimalistAvatar}
       />
       <View style={styles.minimalistTextContainer}>
-        <Text style={styles.minimalistTitle}>Friend Requests</Text>
+        <Text style={styles.minimalistTitle}>Family Requests</Text>
         <Text style={styles.minimalistSubText}>Click to view your requests</Text>
       </View>
       <FontAwesome name="chevron-right" size={20} color="#fff" />

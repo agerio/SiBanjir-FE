@@ -82,7 +82,7 @@ export default function Group() {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
-                <Text style={styles.header}>Friend & Family</Text>
+                <Text style={styles.header}>Family Member</Text>
                 {loading ? (
                     <ActivityIndicator size="large" color="#fff" style={styles.loadingIndicator} />
                 ) : (
@@ -102,7 +102,7 @@ export default function Group() {
                     style={styles.addButton}
                     onPress={() => router.push('/group_related/add_friend')}
                 >
-                    <Text style={styles.addButtonText}>+ Add Friend</Text>
+                    <Text style={styles.addButtonText}>+ Add Member</Text>
                 </TouchableOpacity>
             </View>
 

@@ -29,7 +29,7 @@ const FloodWatchMarker: React.FC<FloodWatchMarkerProps> = ({ floodWatch, markerR
         onPress={handleMarkerPress}
       >
         {showCallout && (
-          <Callout tooltip={true}>
+          <Callout tooltip={true} onPress={handleMarkerPress}>
             <View style={styles.calloutWrapper}>
               <Text style={styles.fwName}>{floodWatch.name}</Text>
               <WebView
