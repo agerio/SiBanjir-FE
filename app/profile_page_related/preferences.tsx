@@ -108,7 +108,7 @@ export default function Preferences() {
                 
                 <SettingItem 
                     label="Location Sharing"
-                    description="Allow your friends to track your location."
+                    description="Allow your family member to track your location."
                     value={locationEnabled}
                     onToggle={toggleLocationSwitch}
                     loading={loading}

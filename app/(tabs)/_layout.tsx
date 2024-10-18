@@ -52,7 +52,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="group"
         options={{
-          title: 'Group',
+          title: 'Family',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'people' : 'people-outline'} color={color} />
           ),
