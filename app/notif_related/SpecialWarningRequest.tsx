@@ -104,6 +104,19 @@ export default function SpecialWarningRequest() {
     }
   };
 
+  const handleDeny = async (id: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/${id}/deny`);
+      if (response.data.detail === 'Warning denied successfully.') {
+        setVerifiedWarnings((prev) => new Set([...prev, id]));
+        Alert.alert('Success', 'Warning denied successfully.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to deny the warning.');
+      console.error('Error denying warning:', error);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -134,12 +147,20 @@ export default function SpecialWarningRequest() {
                 />
               )}
               {!verifiedWarnings.has(item.id) && (
-                <TouchableOpacity
-                  style={styles.verifyButton}
-                  onPress={() => handleVerify(item.id)}
-                >
-                  <Text style={styles.verifyButtonText}>Verify</Text>
-                </TouchableOpacity>
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={[styles.baseButton, {backgroundColor: 'crimson'}]}
+                    onPress={() => handleDeny(item.id)}
+                  >
+                    <Text style={styles.verifyButtonText}>Deny</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.baseButton, {backgroundColor: 'darkgreen'}]}
+                    onPress={() => handleVerify(item.id)}
+                  >
+                    <Text style={styles.verifyButtonText}>Verify</Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           )}
@@ -199,9 +220,14 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 8,
   },
-  verifyButton: {
+  buttonContainer: {
     marginTop: 10,
-    backgroundColor: '#3498db',
+    flexDirection:'row',
+    // backgroundColor:'red',
+  },
+  baseButton: {
+    flex: 1,
+    marginLeft: 10,
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 5,
