@@ -6,6 +6,7 @@ import { getDistance } from 'geolib';
 import { VERIFY_MINIMUM_RADIUS } from '@/context/GlobalContext';
 
 const API_URL = 'https://si-banjir-be.vercel.app/api/specialwarning/warnings';
+const USER_API_URL = 'https://si-banjir-be.vercel.app/api/user/me';
 
 interface Warning {
   id: string;
@@ -13,7 +14,9 @@ interface Warning {
   created_at: string;
   lat: string;
   long: string;
+  userId: string;
   image?: string;
+  created_by: string;
 }
 
 interface UserLocation {
@@ -26,6 +29,7 @@ export default function SpecialWarningRequest() {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [loading, setLoading] = useState(true);
   const [verifiedWarnings, setVerifiedWarnings] = useState<Set<string>>(new Set());
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserLocation = async () => {
@@ -51,8 +55,18 @@ export default function SpecialWarningRequest() {
       }
     };
 
+    const fetchUserData = async () => {
+      try {
+        const response = await axios.get(USER_API_URL);
+        setUsername(response.data.username);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
     const loadData = async () => {
       await fetchUserLocation();
+      await fetchUserData();
       await fetchWarnings();
       setLoading(false);
     };
@@ -72,9 +86,10 @@ export default function SpecialWarningRequest() {
   };
 
   const filterWarningsByDistance = () => {
-    if (!userLocation) return [];
+    if (!userLocation || !username) return [];
 
     return specialWarnings
+      .filter((warning) => warning.created_by !== username) // Filter out warnings created by the logged-in user
       .map((warning) => {
         const distance = getDistance(
           { latitude: userLocation.latitude, longitude: userLocation.longitude },
@@ -104,6 +119,19 @@ export default function SpecialWarningRequest() {
     }
   };
 
+  const handleDeny = async (id: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/${id}/deny`);
+      if (response.data.detail === 'Warning denied successfully.') {
+        setVerifiedWarnings((prev) => new Set([...prev, id]));
+        Alert.alert('Success', 'Warning denied successfully.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to deny the warning.');
+      console.error('Error denying warning:', error);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -119,31 +147,40 @@ export default function SpecialWarningRequest() {
       </View>
       {nearbyWarnings.length > 0 ? (
         <FlatList
-          data={nearbyWarnings}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.warningItem}>
-              <Text style={styles.title}>{item.name}</Text>
-              <Text style={styles.description}>{formatDateTime(item.created_at)}</Text>
-              <Text style={styles.distanceText}>{item.distance} m from your location</Text>
-              {item.image && (
-                <Image
-                  source={{ uri: item.image }}
-                  style={styles.warningImage}
-                  resizeMode="cover"
-                />
-              )}
-              {!verifiedWarnings.has(item.id) && (
-                <TouchableOpacity
-                  style={styles.verifyButton}
-                  onPress={() => handleVerify(item.id)}
-                >
-                  <Text style={styles.verifyButtonText}>Verify</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+  data={nearbyWarnings}
+  keyExtractor={(item) => item.id.toString()} // Ensure that item.id is a unique identifier and converted to a string
+  renderItem={({ item }) => (
+    <View style={styles.warningItem}>
+      <Text style={styles.title}>{item.name}</Text>
+      <Text style={styles.description}>{formatDateTime(item.created_at)}</Text>
+      <Text style={styles.distanceText}>{item.distance} m from your location</Text>
+      {item.image && (
+        <Image
+          source={{ uri: item.image }}
+          style={styles.warningImage}
+          resizeMode="cover"
         />
+      )}
+      {!verifiedWarnings.has(item.id) && (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[styles.baseButton, { backgroundColor: 'crimson' }]}
+            onPress={() => handleDeny(item.id)}
+          >
+            <Text style={styles.verifyButtonText}>Deny</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.baseButton, { backgroundColor: 'darkgreen' }]}
+            onPress={() => handleVerify(item.id)}
+          >
+            <Text style={styles.verifyButtonText}>Verify</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  )}
+/>
+
       ) : (
         <View style={styles.noWarnings}>
           <Text style={styles.noWarningsText}>{`No special warnings nearby within ${VERIFY_MINIMUM_RADIUS} meters.`}</Text>
@@ -152,6 +189,7 @@ export default function SpecialWarningRequest() {
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -199,9 +237,14 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 8,
   },
-  verifyButton: {
+  buttonContainer: {
     marginTop: 10,
-    backgroundColor: '#3498db',
+    flexDirection:'row',
+    // backgroundColor:'red',
+  },
+  baseButton: {
+    flex: 1,
+    marginLeft: 10,
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 5,

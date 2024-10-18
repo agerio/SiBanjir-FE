@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router'; 
 import axios from 'axios';
@@ -209,7 +210,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1e1e30",
-    paddingHorizontal: 10,
+    // backgroundColor: "blue",
+    paddingHorizontal: 20,
   },
   tabContainer: {
     flexDirection: "row",
@@ -217,6 +219,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 15,
     backgroundColor: "#1e1e30",
+    marginBottom: 10,
+    // backgroundColor: "red",
   },
   tabButton: {
     paddingVertical: 10,
@@ -225,20 +229,20 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
   },
   activeTab: {
-    backgroundColor: "#444",
+    backgroundColor: "#fff",
   },
   inactiveTab: {
-    backgroundColor: "#fff",
+    backgroundColor: "#444",
   },
   tabText: {
     fontSize: 16,
     fontWeight: "bold",
   },
   activeTabText: {
-    color: "#fff",
+    color: "#000",
   },
   inactiveTabText: {
-    color: "#000",
+    color: "#fff",
   },
   iconContainer: {
     backgroundColor: "#444",
@@ -319,7 +323,7 @@ const styles = StyleSheet.create({
   minimalistContainer: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 8,
+    padding: 15,
     backgroundColor: "#2b2b4b",
     borderRadius: 10,
     marginBottom: 10,
